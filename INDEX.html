@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מערכת הבריאות בישראל</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: "Rubik", sans-serif; background: #f8fafc; }
+    .flip-card { perspective: 1000px; cursor: pointer; }
+    .flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
+    .flip-card.is-flipped .flip-inner { transform: rotateY(180deg); }
+    .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; }
+    .flip-back { transform: rotateY(180deg); }
+    .quiz-option { transition: all 0.2s; }
+    .quiz-option:hover:not(:disabled) { transform: scale(1.02); }
+    .quiz-option.correct { background: #10b981 !important; color: #fff !important; border-color: #10b981 !important; }
+    .quiz-option.wrong { background: #ef4444 !important; color: #fff !important; border-color: #ef4444 !important; }
+    .topic-card { transition: all 0.3s; cursor: pointer; }
+    .topic-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.18); }
+    .modal-overlay { background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .tab-btn.active { border-bottom: 3px solid #6366f1; color: #6366f1; font-weight: 700; }
+    .tab-btn { transition: all 0.2s; color: #6b7280; }
+    .tab-btn:hover { color: #6366f1; }
+    .quiz-option:disabled { cursor: default; }
+    table.stbl td { border: 1px solid #e5e7eb; padding: 5px 9px; font-size: 12px; }
+    table.stbl tr:nth-child(even) td { background: #f9fafb; }
+    .modal-content h4 { margin-top: 1rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+<header class="relative overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #1a4d6e 70%, #0f2d4a 100%); min-height: 180px;">
+  <!-- Decorative geometric lines -->
+  <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0"/>
+        <stop offset="50%" style="stop-color:#60a5fa;stop-opacity:0.3"/>
+        <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0"/>
+      </linearGradient>
+    </defs>
+    <line x1="0" y1="60" x2="100%" y2="60" stroke="url(#lineGrad)" stroke-width="1"/>
+    <line x1="0" y1="120" x2="100%" y2="120" stroke="url(#lineGrad)" stroke-width="0.5"/>
+    <circle cx="15%" cy="50%" r="80" fill="none" stroke="#3b82f6" stroke-width="0.5" opacity="0.2"/>
+    <circle cx="85%" cy="50%" r="60" fill="none" stroke="#60a5fa" stroke-width="0.5" opacity="0.15"/>
+    <polygon points="0,180 120,60 240,180" fill="#3b82f6" opacity="0.03"/>
+    <polygon points="100%,0 calc(100% - 150px),180 100%,180" fill="#1d4ed8" opacity="0.05"/>
+  </svg>
+  <!-- Thin accent bar on top -->
+  <div class="absolute top-0 left-0 right-0 h-1" style="background: linear-gradient(to right, #3b82f6, #8b5cf6, #06b6d4);"></div>
+  <div class="relative flex flex-col items-center justify-center py-10 px-6 text-center">
+    <div class="mb-3 flex items-center gap-3">
+      <div class="h-px w-16 bg-blue-400 opacity-60"></div>
+      <span class="text-blue-300 text-xs font-medium tracking-[0.3em] uppercase opacity-80">מצגת מקיפה</span>
+      <div class="h-px w-16 bg-blue-400 opacity-60"></div>
+    </div>
+    <h1 class="text-4xl font-bold text-white mb-2" style="letter-spacing: -0.02em; text-shadow: 0 2px 20px rgba(59,130,246,0.3);">מערכת הבריאות בישראל</h1>
+    <p class="text-blue-200 text-sm opacity-75 tracking-wide">נושאים וסיכומים &nbsp;|&nbsp; פלאשקרדס &nbsp;|&nbsp; סימולציית מבחן</p>
+    <div class="mt-4 flex gap-6 text-blue-300 opacity-60 text-xs">
+      <span>📋 11 נושאים</span>
+      <span>🃏 פלאשקרדס</span>
+      <span>✏️ מבחנים</span>
+    </div>
+  </div>
+</header>
+<main class="max-w-6xl mx-auto px-4 py-8">
+  <nav class="flex gap-1 border-b-2 border-gray-200 mb-8 overflow-x-auto">
+    <button type="button" class="tab-btn active pb-3 px-4 text-base whitespace-nowrap" data-tab="topics">📚 נושאים וסיכומים</button>
+    <button type="button" class="tab-btn pb-3 px-4 text-base whitespace-nowrap" data-tab="flashcards">🃏 פלאשקרדס</button>
+    <button type="button" class="tab-btn pb-3 px-4 text-base whitespace-nowrap" data-tab="quiz">✏️ סימולציית מבחן</button>
+  </nav>
+  <section id="tab-topics">
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h2 class="text-2xl font-bold text-gray-800">📖 נושאים וסיכומים</h2>
+    <button onclick="downloadAllSummaries()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-md hover:shadow-lg transition-all" style="background:linear-gradient(135deg,#1e3a5f,#3b82f6)">
+      <span>⬇</span> הורד את כל הסיכומים (PDF)
+    </button>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="topics-grid"></div>
+</section>
+  <section id="tab-flashcards" class="hidden"><h2 class="text-2xl font-bold mb-4 text-gray-800">🃏 פלאשקרדס</h2><div class="flex flex-wrap gap-2 mb-6" id="fc-topic-btns"></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="fc-grid"></div></section>
+  <section id="tab-quiz" class="hidden">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800">✏️ סימולציית מבחן</h2>
+    <div id="quiz-setup" class="space-y-6">
+      <div><h3 class="font-bold text-lg mb-3">בחר נושאים:</h3><div id="quiz-topic-checks" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div></div>
+      <div><h3 class="font-bold text-lg mb-3">כמות שאלות:</h3><div class="flex flex-wrap gap-3" id="quiz-count-btns"></div></div>
+      <button type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition" onclick="startQuiz()">התחל מבחן 🚀</button>
+      <p id="quiz-error" class="text-red-500 font-medium hidden"></p>
+    </div>
+    <div id="quiz-container" class="bg-white rounded-2xl p-6 shadow-lg hidden">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex-1 min-w-[200px]" id="quiz-progress"></div>
+        <div class="flex gap-2 flex-wrap">
+          <button type="button" onclick="backToSetup()" class="px-3 py-1.5 text-xs rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-bold border border-red-300">⬅ תפריט ראשי</button>
+          <button type="button" id="prev-q-btn" onclick="prevQuestion()" class="px-3 py-1.5 text-xs rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium disabled:opacity-40" disabled>← חזור</button>
+          <button type="button" onclick="skipQuestion()" class="px-3 py-1.5 text-xs rounded bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-medium border border-yellow-300">דלג →</button>
+          <button type="button" id="next-q-btn" onclick="nextQuestion()" class="px-3 py-1.5 text-xs rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium disabled:opacity-40" disabled>קדימה →</button>
+        </div>
+      </div>
+      <div class="mb-4"><p class="text-xs text-gray-500 mb-1 text-center">מפת שאלות</p><div id="quiz-map-inline" class="flex flex-wrap gap-1 justify-center"></div></div>
+      <div id="quiz-content"></div>
+      <div id="quiz-result" class="hidden text-center py-8">
+        <div id="quiz-map" class="mb-6 p-4 bg-gray-50 rounded-xl max-h-48 overflow-y-auto"></div>
+        <p id="score-text" class="text-2xl font-bold mb-4"></p>
+        <div class="flex gap-3 justify-center flex-wrap">
+          <button class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold transition" onclick="backToSetup()">חזרה לתפריט 🏠</button>
+          <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition" onclick="restartQuiz()">שחק שוב 🔄</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="summary-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-start justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-3xl w-full my-8 p-8 shadow-2xl relative">
+    <div class="absolute top-4 right-4 flex gap-2">
+      <button type="button" onclick="downloadPDF()" title="הורד כ-PDF" class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 font-bold text-sm" title="הורד PDF">⬇</button>
+      <button type="button" onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">✕</button>
+    </div>
+    <h3 id="modal-title" class="text-2xl font-bold mb-2 text-indigo-900"></h3>
+    <p class="text-xs text-gray-500 mb-5">⭐ = סעיף חשוב במיוחד לבחינה</p>
+    <div id="modal-content" class="modal-content text-gray-700 leading-relaxed space-y-2 text-right text-sm"></div>
+  </div>
+</div>
+<script>
+const topicsData = [
+  {
+    id:'history', title:'א׳ – מבוא, רקע עולמי והיסטוריה', color:'#6366f1',
+    summary:`<h4 class="font-bold text-base text-indigo-800">3 מודלים עיקריים בעולם</h4>
+<ul class="list-disc pr-5 space-y-1"><li><strong>ציבורי:</strong> ממיסים – סקנדינביה, בריטניה, קנדה</li><li><strong>פרטי:</strong> ביטוח חברות – ארה"ב</li><li><strong>מעורב:</strong> שילוב – גרמניה, צרפת, <strong>ישראל</strong></li></ul>
+<h4 class="font-bold text-base text-indigo-800">מ"תקופה רומנטית" לעידן המחסור</h4>
+<p><strong>רומנטית:</strong> "הכול לכולם" ללא מגבלות. <strong>עידן המחסור:</strong> גידול אוכלוסייה, מחלות כרוניות, טכנולוגיה יקרה, ביטוחים פרטיים → חייבים לתעדף!</p>
+<p><strong>שתי גישות:</strong> כלכלית-ליברלית ("הכל לחלק" – ארה"ב) | סוציאלית-דמוקרטית ("חלק לכולם" – ישראל ורוב המערב)</p>
+<h4 class="font-bold text-base text-indigo-800">ציר הזמן</h4>
+<ul class="list-disc pr-5 space-y-1"><li><strong>1911:</strong> כללית הוקמה ע"י תנועת העבודה – מודל וולונטרי</li><li><strong>1933:</strong> לאומית | <strong>1940:</strong> מכבי</li><li><strong>לפני 1995:</strong> 5% ללא ביטוח (250,000 איש). "גריפת שמנת" – מכבי ומאוחדת סיננו מבוטחים. כללית 62.4% מהמבוטחים</li><li><strong>מס מקביל (1973–1997):</strong> 4.7% שמעסיקים שילמו לביטוח לאומי לקופות. בוטל 1997</li><li><strong>משבר שנות ה-90:</strong> גירעון 4 מיליארד ₪ = 15% מההוצאה הלאומית – בעיקר כללית</li></ul>
+<h4 class="font-bold text-base text-indigo-800">ועדת נתניהו (1988–1990)</h4>
+<p><strong>⭐ <strong>ועדת חקירה ממלכתית ראשונה</strong> שהוקמה לבדיקת מערכת הבריאות. בראשות השופטת שושנה נתניהו.</p>
+<p><strong>מה עשתה הוועדה:</strong></p>
+<ul class="list-disc pr-5 space-y-1 text-sm"><li>בחנה את המערכת בהיבטים כלכליים וחברתיים</li><li>נתנה מסגרת מושגית חדשה להבנת המשבר</li><li>הציבה על סדר היום הציבורי את הצורך בחקיקת חוק</li><li>הציגה תוכנית רפורמה שלא הייתה מזוהה עם מפלגה – תוכנית לא מפלגתית = קל יותר לקדם</li></ul>
+<p class="mt-2"><strong>המלצות שהתקבלו:</strong></p>
+<ol class="list-decimal pr-5 space-y-1 text-sm"><li>מחויבות המדינה להעניק שירותי בריאות לתושביה</li><li>חקיקת חוק ביטוח בריאות ממלכתי – ביטוח חובה + סל מוגדר</li><li>הגדרת זכויות המבוטחים: סיעוד לקשישים, בריאות הנפש, רפואה מונעת, טיפולים בחו"ל</li><li>גביה ע"י מנגנון ממשלתי (ביטוח לאומי)</li></ol>
+<p class="mt-2"><strong>המלצות שלא התקבלו:</strong></p>
+<ol class="list-decimal pr-5 space-y-1 text-sm"><li>קופות אזוריות + עידוד הקמת קופות נוספות</li><li>הפרדת בתי החולים הממשלתיים ואלה של כללית לעצמאיים</li><li>הפיכת משרד הבריאות לגוף רגולטורי בלבד – <em>התקבל כעקרון אך לא בוצע במלואו</em></li></ol>
+<p class="mt-2 text-sm">פירוט השירותים שהוועדה המליצה: כל שירותי הקופות + שירותי סיעוד לקשישים, בריאות הנפש, שיניים לקשישים ולצעירים, וטיפולים בחו"ל כשאין פתרון מקומי.</p>
+<h4 class="font-bold text-base text-indigo-800">טבלה: לפני ואחרי החוק</h4>
+<table class="stbl w-full mt-1"><tr class="bg-indigo-50"><td class="font-bold">נושא</td><td class="font-bold">לפני 1994</td><td class="font-bold">אחרי 1995</td></tr>
+<tr><td>חובת ביטוח</td><td>וולונטרי בלבד</td><td>חובה לכל תושב</td></tr>
+<tr><td>כיסוי ביטוחי</td><td>95% (250,000 ללא)</td><td>100% אוניברסלי</td></tr>
+<tr><td>קבלת מבוטחים</td><td>גריפת שמנת – סינון</td><td>איסור סירוב מוחלט</td></tr>
+<tr><td>סל שירותים</td><td>כל קופה קובעת בעצמה</td><td>סל אחיד בחוק</td></tr>
+<tr><td>גביית דמי ביטוח</td><td>דמי חבר לקופות/הסתדרות</td><td>מס בריאות דרך ביטוח לאומי</td></tr>
+<tr><td>אחריות מדינה</td><td>לפי שיקולים פוליטיים</td><td>מחויבות חוקית</td></tr>
+<tr><td>נוסחת קפיטציה</td><td>לא קיים – לפי גודל קופה</td><td>לפי מאפייני מבוטחים (גיל, מין, פריפריה)</td></tr>
+<tr><td>זהות פוליטית</td><td>כללית/לאומית = הסתדרות</td><td>ניתוק מהסתדרות</td></tr>
+<tr><td>התפלגות (כללית)</td><td>62.4%</td><td>↓ 50.8%</td></tr></table>
+<h4 class="font-bold text-base text-indigo-800">⭐ 5 גורמים שאיפשרו חקיקת החוק</h4>
+<ol class="list-decimal pr-5 space-y-2 text-sm">
+<li><strong>⭐ עומק המשבר במערכת הבריאות:</strong>
+  <ul class="list-disc pr-4 mt-1"><li>משבר כספי בקופות (גירעון 4 מיליארד ₪ = 15% מההוצאה הלאומית)</li><li>חשש לפגיעה בזכויות המבוטחים</li><li>"גריפת שמנת" ותחרות לא הוגנת</li><li>ירידה ביכולת הממשלה לכסות גירעונות</li><li>שביתות, תורים, חוסר שביעות רצון</li></ul></li>
+<li><strong>⭐ תרומותיה של ועדת נתניהו:</strong>
+  <ul class="list-disc pr-4 mt-1"><li>נתנה לגיטימציה ציבורית לשינוי</li><li>הפכה את הרפורמה לעניין מקצועי ולא מפלגתי (תוכנית לא מפלגתית = קל יותר לקדם)</li><li>המלצות: המדינה תבטיח שירותים | חוב"מ | הגדרת זכויות | גביה דרך ביטוח לאומי</li></ul></li>
+<li><strong>⭐ שינוי פוליטי – ממשלת רבין (1992):</strong>
+  <ul class="list-disc pr-4 mt-1"><li>חיים רמון הוביל את החוק (עבר לשר עבודה ורווחה, ניהל מו"מ עם ההסתדרות)</li><li>ארבלי-אלמוזלינו כיהנה כשרת הבריאות וקידמה את החוק</li><li>לראשונה: תמיכת שר האוצר</li><li>החוק עבר ב-60 בעד, 4 נמנעים, ללא מתנגדים!</li></ul></li>
+<li><strong>⭐ הסכמת ההסתדרות:</strong>
+  <ul class="list-disc pr-4 mt-1"><li>הסכימה לנתק את כללית מהמבנה ההסתדרותי</li><li>ויתרה על כוח ורכוש משמעותיים תמורת הבטחת עתיד קופת החולים</li></ul></li>
+<li><strong>⭐ שינוי תפיסתי + סביבה כלכלית + השפעות מהעולם:</strong>
+  <ul class="list-disc pr-4 mt-1"><li>הציבור דרש שינוי אמיתי</li><li>שיעורי צמיחה גבוהים בתחילת שנות ה-90 אפשרו לבצע רפורמה</li><li>הולנד: נוסחת קפיטציה להפחתת תמריץ לגריפת שמנת (הפרדת מימון ושירות)</li><li>אנגליה: מודל ה-Trusts – הפרדת משלם/ספק</li><li>הסכמה רחבה שמגיע לכולם ביטוח בריאות</li><li>הרעיון לא התחיל ב-1994: הצעה להסתדרות כבר ב-1930 ע"י ז'בוטינסקי לטיפול בסיסי סוציאליסטי ושוויוני</li><li>סיפורו של חיים רמון: התחיל כשר הבריאות, עבר לשר העבודה והרווחה, והוביל את החוק ב-1994</li></ul></li>
+</ol>
+<div class="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
+<strong>💬 הערת מרצה – מגמות ערב חקיקת החוק:</strong>
+<ul class="list-disc pr-4 mt-1"><li>הרחבת הכיסוי: ב-1994 כ-95% מהתושבים מבוטחים (5% עדיין ללא)</li><li>תזוזת מבוטחים מכללית לקופות אחרות</li><li>ריכוז סלקטיבי: יותר מבוגרים ופחות עשירים ב"כללית" ו"לאומית" יחסית למכבי ומאוחדת</li></ul>
+</div>`,
+    flashcards:[
+      ['מהם 3 מודלי מערכות הבריאות?','ציבורי (סקנדינביה), פרטי (ארה"ב), מעורב (ישראל)'],
+      ['"גריפת שמנת" – מה זה?','העדפת מבוטחים צעירים ובריאים – מכבי ומאוחדת סיננו לפני 1995'],
+      ['כמה היו ללא ביטוח לפני 1995?','250,000 איש – 5% מהאוכלוסייה'],
+      ['מהו מס מקביל?','4.7% משכר שמעסיקים שילמו (1973–1997). בוטל 1997'],
+      ['מה גרם למשבר?','גירעון 4 מיליארד ₪ (15% הוצאה לאומית) – ניהול כושל, פוליטיזציה'],
+      ['מה השינוי הגדול ביותר שהחוק הביא?','מוולונטרי לחובה, סל אחיד, גביה דרך ביטוח לאומי, איסור סירוב'],
+      ['מה ועדת נתניהו המליצה שלא התקבל?','קופות אזוריות + הפרדת בתי"ח ממשלתיים'],
+      ['כמה הצביעו בעד החוק?','60 בעד, 4 נמנעים, 0 מתנגדים'],
+      ['מה ההבדל בין לפני לאחרי בנוסחת קפיטציה?','לפני: לפי גודל קופה. אחרי: לפי גיל, מין ומקום מגורים'],
+      ['מה קרה לכללית אחרי החוק?','ירדה מ-62.4% ל-50.8% בגלל חופש בחירה'],
+    ],
+    questions:[
+      {q:'מהי גישת ישראל למערכת הבריאות?',options:['ציבורית טהורה','פרטית','מעורבת עם כיסוי אוניברסלי','ביטוח פרטי חובה'],answer:2},
+      {q:'"גריפת שמנת" – מה משמעות המונח?',options:['גניבת תרופות','העדפת מבוטחים צעירים ובריאים','סבסוד ממשלתי','מיסוי גבוה'],answer:1},
+      {q:'מה נכון לגבי מאפייני קופות החולים לפני חוב"מ?',options:['גביית מס החבר ע"י הביטוח הלאומי','לכל הקופות זהות פוליטית להסתדרות','⭐ הכללית הייתה הקופה הגדולה ביותר','ביטוח בריאות היה חובה'],answer:2},
+      {q:'מה נכון לגבי המס המקביל?',options:['בחוב"מ נקבע שמעסיקים ימשיכו לשלם','המס שולם ע"י כל עובד שכיר','⭐ חוב"מ ביטל את המס המקביל','המס נגבה ע"י הקופות'],answer:2},
+      {q:'מה נכון לגבי מצב ביטוח הבריאות לפני החוק?',options:['רק בעלי הכנסה גבוהה היו מבוטחים','רק חברי ההסתדרות הכללית','⭐ רוב מוחלט של האזרחים היו מבוטחים (כ-95%)','לא הייתה אפשרות לביטוח בריאות'],answer:2},
+      {q:'מהי גישה סוציאלית-דמוקרטית?',options:['"הכל לחלק"','"חלק לכולם" – סל בסיסי לכולם','ביטוח פרטי','הפרטה'],answer:1},
+      {q:'מה היה גודל הגירעון שהצדיק את החוק?',options:['400 מיליון','4 מיליארד ₪ (15%)','40 מיליארד','1 מיליארד'],answer:1},
+      {q:'כמה הצביעו בעד החוק בכנסת?',options:['50 בעד','60 בעד 0 מתנגדים','פה אחד','40 בעד'],answer:1},
+      {q:'מי הוביל חקיקת החוק?',options:['יצחק רבין','חיים רמון','שושנה נתניהו','שמעון פרס'],answer:1},
+    ]
+  },
+  {
+    id:'law', title:'ב׳ – חוק ביטוח בריאות ממלכתי + קפיטציה', color:'#f59e0b',
+    summary:`<h4 class="font-bold text-base text-amber-800">6 שינויים מרכזיים</h4>
+<ol class="list-decimal pr-5 space-y-1"><li>ביטוח חובה – ללא חיתום</li><li>סל שירותים אחיד בחוק</li><li>חופש בחירה – מעבר בין קופות (3 חודשי המתנה)</li><li>איסור סירוב מוחלט</li><li>גביה דרך ביטוח לאומי</li><li>אחריות חוקית של המדינה למימון</li></ol>
+<p class="text-sm">אושר יוני 1994 · נכנס לתוקף ינואר 1995</p>
+<h4 class="font-bold text-base text-amber-800">עקרונות החוק</h4>
+<p>סעיף 1: <strong>צדק, שוויון ועזרה הדדית</strong>. סעיף 3(ה): <strong>"שירותים תוך שמירה על כבוד האדם"</strong>. שירות: איכות סבירה | זמן סביר | מרחק סביר | שיקול דעת רפואי.</p>
+<h4 class="font-bold text-base text-amber-800">תוספת שנייה ושלישית</h4>
+<table class="stbl w-full mt-1"><tr><td class="font-bold">תוספת שנייה (קופות)</td><td>ראשונית, מומחים, אשפוז, תרופות, שיקום, שיניים לילדים, נפש (2015), שיקום ניידות (2024)</td></tr>
+<tr><td class="font-bold">תוספת שלישית (משרד)</td><td>רפואה מונעת (חיסונים, טיפות חלב), אשפוז סיעודי גריאטרי</td></tr></table>
+<h4 class="font-bold text-base text-amber-800">גביית דמי ביטוח בריאות</h4>
+<table class="stbl w-full mt-1"><tr><td class="font-bold">נושא</td><td class="font-bold">לפני</td><td class="font-bold">אחרי</td></tr>
+<tr><td>המוסד הגובה</td><td>קופות/הסתדרות</td><td>ביטוח לאומי</td></tr>
+<tr><td>חובת תשלום</td><td>וולונטרי</td><td>חובה</td></tr>
+<tr><td>אופי המס</td><td>רגרסיבי</td><td>פרוגרסיבי (הוגן יותר)</td></tr>
+<tr><td>תקרה</td><td>פי 3 שכר ממוצע</td><td>פי 4 שכר ממוצע</td></tr></table>
+<p><strong>מס בריאות 2025:</strong> 3.23% עד 60% מהשכר הממוצע (₪7,522) | 5.16% מעל (עד ₪50,695)</p>
+<p><strong>פרוגרסיבי:</strong> שיעור עולה עם ההכנסה. <strong>רגרסיבי:</strong> שיעור יורד.</p>
+<h4 class="font-bold text-base text-amber-800">שיפורים ואתגרי החוק</h4>
+<p><strong>שיפורים:</strong> כיסוי לכולם | סל אחיד | הפחתת גריפת שמנת | פרוגרסיביות | יציבות תקציבית | תחרות מנוהלת</p>
+<p><strong>אתגרים:</strong> מימון הסל | עדכון תוספת שלישית | אי-שוויון | שב"ן | כשלי קפיטציה | מחסור תקציבי | ריכוזיות | מחסור בכ"א</p>
+<p><strong>נציבות קבילות:</strong> גוף לתלונות לפי חוק ביטוח בריאות ממלכתי (לא חוק זכויות החולה)</p>
+<h4 class="font-bold text-base text-amber-800">נוסחת הקפיטציה</h4>
+<p>חלוקת תקציב לפי <strong>רמת סיכון בריאותי</strong>, לא רק לפי מספר מבוטחים.</p>
+<p><strong>2 ערוצים:</strong> 5 מחלות קשות (דיאליזה, גושה, תלסמיה, המופיליה, HIV) | נוסחה כללית (גיל, מין, מקום)</p>
+<p><strong>עד 2010:</strong> גיל בלבד. <strong>מ-2010:</strong> נוסף מין (נשים 15–55) + פריפריה (+₪200 לאדם ≈ 5%)</p>
+<p><strong>מטרות:</strong> הגנות הוגנת לפי סיכון | מניעת גריפת שמנת | חיזוק פריפריה | עידוד התייעלות</p>
+<h4 class="font-bold text-base text-amber-800">שחיקה תקציבית</h4>
+<p><strong>מקור מרכזי:</strong> מחיר יום אשפוז = 43% ממדד תשומות קופות אך <u>אינו</u> במדד יוקר הבריאות!</p>
+<p><strong>3 מנגנוני עדכון:</strong> מדד יוקר הבריאות (חוקי) | דמוגרפי | טכנולוגי (מ-1998)</p>
+<p>ועדת גרמן קבעה סף מינימלי – ההקצאה בפועל מתחתיו. בג"ץ 2012: "הזכות לבריאות מתרוקנת מתוכן".</p>`,
+    flashcards:[
+      ['מהם 6 שינויי החוק?','חובה, סל אחיד, חופש בחירה, איסור סירוב, גביה דרך ביטוח לאומי, אחריות מדינה'],
+      ['מה ההבדל בין מס פרוגרסיבי לרגרסיבי?','פרוגרסיבי: עולה עם ההכנסה (הוגן). רגרסיבי: יורד (לא הוגן)'],
+      ['מהם שיעורי מס הבריאות 2025?','3.23% עד ₪7,522 | 5.16% עד ₪50,695'],
+      ['מהי תוספת שנייה?','שירותים באחריות קופות: ראשונית, מומחים, אשפוז, תרופות, שיקום, נפש (2015)'],
+      ['מהי תוספת שלישית?','שירותים באחריות משרד הבריאות: רפואה מונעת, אשפוז סיעודי גריאטרי'],
+      ['מהם שיפורי החוק?','כיסוי לכולם, סל אחיד, הפחתת גריפת שמנת, יציבות, תחרות מנוהלת'],
+      ['מהם אתגרי החוק?','מימון, שב"ן, אי-שוויון, כשלי קפיטציה, מחסור תקציבי, מחסור בכ"א'],
+      ['מהי נציבות קבילות?','גוף לתלונות על פגיעה בזכויות לפי חוק ביטוח בריאות ממלכתי'],
+      ['מהן 5 המחלות הקשות?','דיאליזה, גושה, תלסמיה, המופיליה, HIV'],
+      ['מה הוסיפו לקפיטציה ב-2010?','מין (נשים 15–55) + פריפריה (+₪200 ≈ 5%)'],
+      ['מה מקור השחיקה המרכזי?','יום אשפוז (43% ממדד תשומות) אינו נכלל במדד יוקר הבריאות!'],
+    ],
+    questions:[
+      {q:'מתי החוק נכנס לתוקף?',options:['ינואר 1994','יוני 1994','ינואר 1995','ינואר 1997'],answer:2},
+      {q:'מה עיקרון חובת הביטוח?',options:['רק עובדים','כל תושב ללא חיתום','מעל גיל 18','רק אזרחים'],answer:1},
+      {q:'מהן 5 המחלות הקשות בקפיטציה?',options:['סרטן, לב, כליות','דיאליזה, גושה, תלסמיה, המופיליה, HIV','אסתמה, סוכרת','כולן בנוסחה'],answer:1},
+      {q:'מה הוסיפו לנוסחה ב-2010?',options:['גיל בלבד','מין + מקום מגורים','הכנסה','גזרה'],answer:1},
+      {q:'מה מקור השחיקה המרכזי?',options:['תרופות','יום אשפוז שאינו במדד יוקר הבריאות','שכר גבוה','מחסור בתרופות'],answer:1},
+      {q:'מהי תוספת שלישית?',options:['שירותי קופות','שירותי משרד הבריאות: רפואה מונעת וגריאטריה','ביטוח משלים','שירותים פרטיים'],answer:1},
+      {q:'מהו מס פרוגרסיבי?',options:['קבוע','עולה עם ההכנסה','יורד עם ההכנסה','לפי גיל'],answer:1},
+      {q:'מהי נציבות קבילות?',options:['ועדת סל','גוף לתלונות לפי חוק ביטוח בריאות','בית משפט','משרד האוצר'],answer:1},
+    ]
+  },
+  {
+    id:'basket', title:'ג׳ – סל הבריאות ועדת הסל', color:'#10b981',
+    summary:`<h4 class="font-bold text-base text-emerald-800">⭐ מהו סל הבריאות?</h4>
+<p>⭐ רשימה סגורה ומחייבת של שירותים, תרופות, ציוד ומכשירים רפואיים שהמבוטחים זכאים לקבל. הוגדר לפי שירותי כללית ב-1.1.1994 + משרד הבריאות ב-31.12.1994. עלות ב-1995: 12.2 מיליארד ₪. מתעדכן מדי שנה.</p>
+<p class="text-red-700 font-medium">⭐ "תרופה בסל" ≠ שכל מטופל יכול לקבל אותה! יש התוויות מוגדרות: מחלה ספציפית | שלב המחלה | קו שני/שלישי | גיל. מי שלא עומד בהתוויה – מחוץ לסל.</p>
+
+<h4 class="font-bold text-base text-emerald-800">אופן מתן השירותים</h4>
+<p>שיקול דעת רפואי | איכות סבירה | זמן סביר | מרחק סביר ממקום מגורים | בכפוף לחוק ולתקנותיו. לבדיקת הסל העדכני: אתר "כל הבריאות" של משרד הבריאות.</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ אחריות למימוש הסל</h4>
+<table class="stbl w-full mt-1">
+<tr><td class="font-bold">קופות החולים – תוספת שנייה</td><td>חינוך לבריאות | אבחון | טיפול אמבולטורי ונפשי | אשפוז כללי/פסיכיאטרי | שיקום רפואי | פיזיותרפיה, ריפוי דיבור, עיסוק | תרופות | שיניים לילדים | עזרה ראשונה | גמילה מסמים</td></tr>
+<tr><td class="font-bold">משרד הבריאות – תוספת שלישית</td><td>רפואה מונעת אישית (חיסונים, טיפות חלב, בריאות תלמיד) | אשפוז סיעודי גריאטרי. <em>בעבר גם נפש (עד 2015) ושיקום ניידות (עד 2024)</em></td></tr>
+</table>
+<p class="text-sm mt-1">⭐ הכוונה המקורית: תוספת שלישית תעבור לקופות ב-1997. בפועל – לא קרה בזמן. מטרה: רצף טיפולי + משרד הבריאות כמיניסטריון בלבד.</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ 3 מנגנוני עדכון הסל</h4>
+<ol class="list-decimal pr-5 space-y-2 text-sm">
+<li><strong>מדד יוקר הבריאות</strong> – המנגנון החוקי היחיד (סעיף 9ב(1) לחוק). מטרה: לשמור על רמת השירות. ⭐ <strong>ההבדל הקריטי</strong>: במדד יוקר הבריאות 61.7% צמודים לשכר בריאות כולו. במדד יום אשפוז 63.51% צמודים לשכר בבתי"ח (גבוה יותר). <u>יום אשפוז = 43% ממדד תשומות קופות אך לא נכלל במדד יוקר הבריאות</u> = מקור השחיקה המרכזי!</li>
+<li><strong>עדכון דמוגרפי</strong> – החוק לא קובע שיעור קבוע. השרים רשאים אך לא חייבים לעדכן. הגידול הדמוגרפי של מקורות הסל היה נמוך מהגידול בפועל → פער מצטבר ושחיקה.</li>
+<li><strong>עדכון טכנולוגי</strong> – מ-1998 (בעקבות מחאה): תוספת שנתית לסל לפי דיוני תקציב. בין 2011–2016 נשארה כ-300 מיליון ₪ אך שיעורה מהסל ירד מ-0.94% ל-0.71% → שחיקה יחסית. ⭐ ועדת גרמן קבעה סף מינימלי – ההקצאה בפועל כבר מתחת לסף!</li>
+</ol>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ שחיקה תקציבית</h4>
+<p><strong>הגדרה:</strong> מצב שבו הוצאות גדולות מהמקורות הכספיים הצפויים.</p>
+<p><strong>סיבות לשחיקה בסל:</strong></p>
+<ul class="list-disc pr-5 text-sm"><li>עליית מחירי שירותים/סחורות</li><li>הרחבת תוכניות מעבר למתוכנן</li><li>כשלים בניהול תקציבי</li><li>שינויים בסביבה חיצונית (כלכלה, חוק)</li><li>⭐ ממשלה מעלה שכר לרופאים ואחיות ללא הגדלת תקציב הסל → שחיקה ריאלית</li><li>⭐ מחיר יום אשפוז לא נכלל במדד יוקר הבריאות</li></ul>
+<p class="text-sm mt-1">⭐ <strong>פסיקת בג"ץ 2012:</strong> "זכותם של אזרחי ישראל לבריאות... מתרוקנת אט אט מתוכן נוכח השחיקה השיטתית בתקציבי קופות החולים". כללית עתרה לבג"ץ → תוקנו חלק מהמשקולות, אך שחיקה מתמשכת.</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ ועדת הסל (מ-1999)</h4>
+<ul class="list-disc pr-5 text-sm"><li>⭐ ועדה ציבורית מייעצת לשרי הבריאות והאוצר. מונתה לראשונה 1999.</li><li>18–20 חברים: יו"ר, נציגי קופות, משרדי בריאות ואוצר, ציבור (רופאים, כלכלנים, איש דת, עו"ס) – הרכב אינו קבוע.</li><li>⭐ תקציב לעדכון: 0–500 מיליון ₪ לעומת ביקושים של 1.5–52 מיליארד ₪!</li><li>החלטות בקונצנזוס. PRIORITISATION = תיעדוף.</li><li>⭐ הוועדה לא מחליטה "אם" לתת טיפול – היא מחליטה מה נכנס לסל עם תקציב מוגבל. כלי מרכזי: QALY (עלות לשנת חיים מותאמת איכות).</li></ul>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ ועדת המשנה (מ-2006)</h4>
+<p>הרכב: נציגי משרד הבריאות, אוצר, קופות (רופאים, רוקחים, כלכלנים). תפקיד: פגישות עם מומחים מקצועיים | קביעת היקפי חולים צפויים | קביעת גובה התוספת הכספית לכל טכנולוגיה.</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ סוגי בקשות שניתן להגיש לוועדה</h4>
+<ul class="list-disc pr-5 text-sm"><li>תרופה/טכנולוגיה חדשה שאינה בסל</li><li>התוויה חדשה לתרופה/טכנולוגיה שכבר בסל</li><li>הרחבת מסגרת האוכלוסייה הזכאית</li></ul>
+<p class="text-sm text-red-700"><strong>מה לא יכול לעלות:</strong> "זחילה טכנולוגית" (התפתחות של טכנולוגיה קיימת) | תרופות/התוויות שאינן רשומות בישראל</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ לוחות זמנים – תהליך ועדת הסל</h4>
+<table class="stbl w-full mt-1">
+<tr><td class="font-bold w-36">ינואר–פברואר</td><td>פרסום קול קורא – כ-900 בקשות מוגשות</td></tr>
+<tr><td class="font-bold">מרץ</td><td>הוצאת בקשות לא רלוונטיות (זחילה טכנולוגית, לא רשומות)</td></tr>
+<tr><td class="font-bold">מרץ–יוני</td><td>כתיבת "תנ"ך תרופות" – הערכה טכנולוגית לכל בקשה</td></tr>
+<tr><td class="font-bold">אפריל–אוגוסט</td><td>פגישות עם נציגי חברות תרופות/טכנולוגיות</td></tr>
+<tr><td class="font-bold">אוקטובר–נובמבר</td><td>הוועדה מתכנסת: דירוג לפי יעילות קלינית + עלות + היקפי חולים</td></tr>
+<tr><td class="font-bold">דצמבר</td><td>"חותכים בבשר החי" – נשארות רק תרופות בתוך התקציב, בקונצנזוס</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ חישוב עלות הכללת טיפול בסל (Budget Estimated)</h4>
+<p><strong>מכפלה:</strong> מספר חולים צפוי × צריכה שנתית לחולה (מינון × משך) × עלות יחידה. <strong>מחסירים:</strong> עלות חלופות קיימות בסל לאותה התוויה.</p>
+<p class="text-sm">⭐ <strong>התקציב קבוע אחרי ההכללה:</strong> שימוש עולה → קופות לא מקבלות נוסף | חיסכון → נשאר בקופות | התקציב העודף משמש לטיפולים חורגים, תרופות שלא בסל, ועדות חריגים.</p>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ אמות מידה לבחינת תרופה/טכנולוגיה</h4>
+<p><strong>שיקולים רפואיים:</strong> הצלת/הארכת חיים | שיפור איכות חיים | מניעת סבל/כאב/נכות | מניעת תחלואה עתידית</p>
+<p><strong>שיקולים כלכליים:</strong> עלות לפרט | חלופות בסל | הקטנת נטל לחברה | יעילות כלכלית קצר/ארוך</p>
+<p><strong>נתוני רקע נוספים:</strong> מה החלופות? | העדפה לאוכלוסיות חלשות? | טכנולוגיה שהחולה לא יכול לשאת עלותה? | אוכלוסייה רחבה?</p>
+<p class="text-sm mt-1"><strong>⭐ מאפייני תעדוף גבוה (Unmet Need):</strong></p>
+<ol class="list-decimal pr-5 text-sm"><li>מענה לצורך קליני משמעותי שאין לו פתרון</li><li>המענה הוכח במחקרים קליניים מבוקרים</li><li>ההשפעה התקציבית הכוללת והעלות למטופל בודד סבירה</li></ol>
+
+<h4 class="font-bold text-base text-emerald-800">⭐ ייחודיות ישראל לעומת העולם</h4>
+<table class="stbl w-full"><tr><td class="font-bold">בישראל</td><td class="font-bold">במרבית המדינות</td></tr>
+<tr><td>הערכה בו-זמנית של כל הטכנולוגיות</td><td>כל טכנולוגיה נדונה בנפרד</td></tr>
+<tr><td>תיעדוף מול תקציב קבוע מראש</td><td>לא מוגבל בתקציב מראש</td></tr>
+<tr><td>תלויה בהחלטות על טכנולוגיות אחרות</td><td>לא תלויה בטכנולוגיה אחרת</td></tr></table>
+
+<h4 class="font-bold text-base text-emerald-800">פתרונות למצוקת תקציב</h4>
+<ul class="list-disc pr-5 text-sm">
+<li><strong>השתתפות עצמית עד 50%:</strong> Ariply (דיכאון), Zostavax (הרפס)</li>
+<li><strong>הסכמי גידור / חלוקת סיכון:</strong> Performance-based (לפי תוצאות קליניות) | Financial-based (כמות-מחיר)</li>
+<li><strong>⭐ קלאס אפקט (me too):</strong> תרופות מאותה קבוצה טיפולית. קופה רשאית לספק כל תרופה מהקלאס. אם יש אינדיקציה לתרופה ספציפית – חייבת לספקה.</li>
+</ul>
+<h4 class="font-bold text-base text-emerald-800">⭐ השורה התחתונה</h4>
+<p>המנגנון עובד טוב: תרופות בישראל זולות לעומת גרמניה, יפן, שוויץ, ארה"ב. כשליש מהתרופות החדשות נכנסות ללא עלות (עלות זהה לחלופה, או מחליפה תרופה קיימת).</p>
+<div class="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-sm">
+<strong>💬 הערת מרצה:</strong> הוועדה לא מחליטה "האם" לתת טיפול, אלא "מה נכנס לסל" עם תקציב מוגבל. יש מחלוקת: האם העדכון צריך להיות "עדכון סגור" (מעוגן בחקיקה) או "עדכון פתוח" (משא ומתן תקציבי שנתי). כיום: עדכון פתוח = תלוי בכוח שדות פוליטי.
+</div>`,
+    flashcards:[
+      ['מה ועדת הסל?','ועדה מייעצת לשרי בריאות ואוצר (מ-1999). 18–20 חברים. תקציב 0–500 מיליון ₪'],
+      ['"תרופה בסל" לא אומר מה?','שכל מטופל יקבל – יש התוויות: מחלה, שלב, קו, גיל'],
+      ['מהו QALY?','Quality-Adjusted Life Year – עלות לשנת חיים מותאמת איכות'],
+      ['מה ניתן להגיש לוועדה?','תרופה/טכנולוגיה חדשה | התוויה חדשה | הרחבת אוכלוסייה'],
+      ['מה לא ניתן להגיש?','זחילה טכנולוגית + תרופות לא-רשומות בישראל'],
+      ['כיצד מחשבים עלות הכללה?','חולים × צריכה × עלות יחידה − עלות חלופה קיימת'],
+      ['מה מאפיין תעדוף גבוה?','Unmet need + הוכחה קלינית + השפעה תקציבית סבירה'],
+      ['ייחודיות ישראל בוועדת הסל?','כל טכנולוגיות נדונות בו-זמנית מול תקציב קבוע'],
+      ['מהו הסכם Performance-based?','משלמים לחברת התרופה רק אם הטיפול הוכיח תוצאה'],
+      ['מהו קלאס אפקט?','קבוצת תרופות – קופה בוחרת, אך חייבת ספציפית אם יש אינדיקציה'],
+    ],
+    questions:[
+      {q:'מתי הוקמה ועדת הסל?',options:['1994','1997','1999','2006'],answer:2},
+      {q:'מה "תרופה בסל" לא מבטיח?',options:['שהיא בטוחה','שכל מטופל יקבל אותה','שהיא חינם','שהיא יעילה'],answer:1},
+      {q:'מה לא ניתן להגיש לוועדה?',options:['תרופה חדשה','זחילה טכנולוגית','התוויה חדשה','הרחבת אוכלוסייה'],answer:1},
+      {q:'ייחודיות ישראל בוועדת הסל?',options:['הכי יקרה','כל טכנולוגיות בו-זמנית מול תקציב קבוע','רק רופאים מחליטים','אין ועדה'],answer:1},
+      {q:'מה QALY?',options:['סוג תרופה','שנת חיים מותאמת איכות','סוג ביטוח','שם ועדה'],answer:1},
+      {q:'מה מאפיין תעדוף גבוה?',options:['מחיר נמוך','Unmet need + הוכחה + השפעה תקציבית סבירה','פרסום','ביקוש גבוה'],answer:1},
+      {q:'כמה בקשות מוגשות לוועדה בשנה?',options:['כ-100','כ-300','כ-900','כ-2000'],answer:2},
+    ,
+      {q:'מה נכון לגבי ועדת הסל?',options:['התוויה חדשה לתרופה נכנסת לסל אוטומטית','ניתן להציע תרופות לא-רשומות בישראל','⭐ ניתן להציע טכנולוגיה חדשה ולא רק תרופות','כל קופה מחליטה איזו תרופות אצלה בסל'],answer:2},
+      {q:'מה לא מהווה שיקול בחישוב עלות הכנסת תרופה לסל?',options:['מחיר יחידת תרופה','⭐ ארץ ייצור של התרופה','מספר המטופלים הצפויים','כמות יחידות שנוטל חולה ממוצע'],answer:1},
+      {q:'מה נכון לגבי הסכמי חלוקת סיכון (Risk Sharing)?',options:['ההסכם בדרך כלל לא טוב לקופות','ההסכם לא טוב לחברת התרופות','נקבע רק כשיש אי-וודאות ביעילות בלבד','⭐ נקבע כשיש אי-וודאות ביעילות או במספר החולים שיטופלו'],answer:3},
+]
+  },
+  {
+    id:'mental', title:'ד׳ – בריאות הנפש והרפורמה', color:'#ec4899',
+    summary:`<h4 class="font-bold text-base text-pink-800">היקף מחלות הנפש</h4>
+<ul class="list-disc pr-5"><li>כ-10% מהאוכלוסייה | 1–2% קשות וממושכות (מחציתם סכיזופרניה)</li><li>100,000 נכי נפש קשים | 300,000 בני משפחה מושפעים</li><li>כשליש מנכויות ביטוח לאומי = נפשיות</li><li>דיכאון: 280 מיליון בעולם. ב-2030 – הנטל הגדול ביותר</li></ul>
+<h4 class="font-bold text-base text-pink-800">דיכאון וקשר לתמותה</h4>
+<p>אנשים עם הפרעות פסיכיאטריות בסיכון גבוה למוות מוקדם: <strong>סיבות גופניות</strong> (לב, סוכרת – פי 1.4–3.3) + <strong>לא טבעיות</strong> (התאבדות). נמצא קשר ישיר בין דיכאון לעלייה בתמותה.</p>
+<p>חסמים לטיפול: מחסור במשאבים | צוות לא מודרך | סטיגמה. רק 25% מהחולים בדיכאון מקבלים טיפול יעיל.</p>
+<h4 class="font-bold text-base text-pink-800">למה צריך טיפול משולב?</h4>
+<ol class="list-decimal pr-5"><li>טיפול כוללני – גוף ונפש יחד</li><li>מניעה ואיתור מוקדם של בעיות גופניות</li><li>זיהוי וטיפול מוקדם בדיכאון</li><li>מחקר נוסף להבנת הקשר פסיכיאטריה-תמותה</li></ol>
+<h4 class="font-bold text-base text-pink-800">תחלואה גופנית בקרב חולי נפש</h4>
+<p><strong>נפש → גוף:</strong> עודף משקל, עישון, תזונה רעה, חוסר פעילות, HIV, פגיעה חיסונית</p>
+<p><strong>גוף → נפש:</strong> זיהומים, היפוקסיה, סוכרת, אלכוהול, תופעות לוואי, מחלה כרונית</p>
+<p><strong>תוצאה כשיש שניהם:</strong> שימוש לא יעיל בשירותי בריאות | התעלמות מבעיות גופניות | היענות נמוכה לטיפול</p>
+<h4 class="font-bold text-base text-pink-800">3 תת-רפורמות</h4>
+<table class="stbl w-full"><tr><td class="font-bold">מבנית (ה-90)</td><td>אל-מיסוד: צמצום מיטות + מעבר לקהילה</td></tr><tr><td class="font-bold">שיקומית (2000)</td><td>סל שיקום: דיור, תעסוקה, חברה, ליווי</td></tr><tr><td class="font-bold">ביטוחית (2015)</td><td>העברת אחריות ממשרד הבריאות לקופות</td></tr></table>
+<h4 class="font-bold text-base text-pink-800">רקע היסטורי</h4>
+<p><strong>ועדת נתניהו 1988:</strong> המליצה להעביר לקהילה ולקופות. <strong>החוק 1994:</strong> נפש נשארה בתוספת שלישית. <strong>1995–2015:</strong> הזנחה – חלוקת אחריות לא יעילה. <strong>2012:</strong> אושרה בצו. <strong>יולי 2015:</strong> כניסה לתוקף.</p>
+<h4 class="font-bold text-base text-pink-800">נקודות מחלוקת לפני הרפורמה</h4>
+<ol class="list-decimal pr-5 text-sm"><li>חשש שיקולים כלכליים יפגעו בטיפולים ממושכים</li><li>טענה שנפש = תחום שונה, ראוי להפרדה</li><li>סטיגמה במרפאה רגילה</li><li>תקציב לא מתאים</li><li>לא הוגדרו קריטריוני זכאות לאבחנות משבריות</li><li>העברה בצו – לא הליך דמוקרטי</li><li>פגיעה בהתמחות קלינית של פסיכולוגים</li></ol>
+<h4 class="font-bold text-base text-pink-800">3 עקרונות אידיאולוגיים</h4>
+<p>De-Centralization (ביזור) | De-Institutionalization (אל-מיסוד) | De-Stigmatization (הפחתת סטיגמה)</p>
+<h4 class="font-bold text-base text-pink-800">מרפאות אחרי ההכנה</h4>
+<p>כללית פתחה 61 מרפאות חדשות: 27 לילדים | 34 למבוגרים | 44 בפריפריה | 18 ערבי | 14 חרדי</p>
+<h4 class="font-bold text-base text-pink-800">שירות פסיכיאטרי בבתי חולים</h4>
+<p><strong>רצף שירותים:</strong> ייעוץ בלבד ← שירות חלקי (אשפוז יום, פתוח) ← שירות רחב (סגור, יום, תוכניות בית). לא בכל בתי"ח יש שירות, והיקפו שונה.</p>
+<h4 class="font-bold text-base text-pink-800">מיטות פסיכיאטריות</h4>
+<p>ירד מ-0.77 ל-0.38 ל-1,000 נפש (2000–2020). OECD: 0.63. תפוסה: ~95%.</p>
+<p>יותר מ-80% מהמיטות – בבעלות המדינה. בישראל – יותר בבתי"ח ייעודיים, פחות משולבים (vs. OECD).</p>
+<h4 class="font-bold text-base text-pink-800">כוח אדם, זמני המתנה, הוצאה</h4>
+<p><strong>כ"א:</strong> מחסור חמור, בעיקר בהתפתחות הילד. <strong>זמני המתנה:</strong> ארוכים, לפני הרפורמה ארוכים יותר. <strong>הוצאה ציבורית:</strong> ~5% מכלל ההוצאה לבריאות – נמוך מ-OECD. <strong>סיבות אשפוז:</strong> רוב בהסכמה, ~1/3 בכפייה.</p>
+<p><strong>שיקום לא-רפואי</strong> (דיור, תעסוקה) <strong>נשאר באחריות משרד הבריאות – לא עבר לקופות!</strong></p<h4 class="font-bold text-base text-pink-800">⭐ שינויים בימי אשפוז פסיכיאטרי</h4>
+<p>לאורך השנים יש ירידה גם בימי אשפוז ל-1,000 נפש וגם בימי אשפוז יום ל-1,000 נפש. זה חלק מהמגמה של מעבר מטיפול מוסדי לטיפול בקהילה (אל-מיסוד).</p>
+
+<h4 class="font-bold text-base text-pink-800">⭐ סיבות אשפוז – הסכמה ובכפייה</h4>
+<p>⭐ מרבית האשפוזים הפסיכיאטריים הם <strong>בהסכמה</strong>. אך כ-<strong>שליש מהאשפוזים הם בכפייה</strong>.</p>
+
+<h4 class="font-bold text-base text-pink-800">⭐ זמני המתנה לטיפול פסיכולוגי</h4>
+<p>קיימים זמני המתנה ארוכים לטיפול פסיכולוגי. אך <strong>לפני הרפורמה התורים היו ארוכים אף יותר</strong>. הרפורמה שיפרה את המצב אך לא פתרה אותו לחלוטין.</p>
+
+<h4 class="font-bold text-base text-pink-800">⭐ כוח אדם בבריאות הנפש</h4>
+<ul class="list-disc pr-5 text-sm">
+<li>⭐ קיים <strong>מחסור חמור במטפלים</strong>, בעיקר בתחום התפתחות הילד</li>
+<li>תפוסת המיטות הפסיכיאטריות סביב <strong>95%</strong> – עומס קשה</li>
+<li>הביקוש לשירותים גדל מעבר לצפוי לאחר הרפורמה</li>
+<li>ייקח זמן עד שהמערכת תתאזן</li>
+</ul>
+
+<h4 class="font-bold text-base text-pink-800">⭐ ההוצאה הציבורית לבריאות הנפש</h4>
+<ul class="list-disc pr-5 text-sm">
+<li>ההוצאה הציבורית על בריאות הנפש בישראל <strong>נמוכה</strong> לעומת מדינות אירופה</li>
+<li>⭐ חלקה של בריאות הנפש מכלל ההוצאה הציבורית לבריאות: <strong>כ-5% בלבד</strong></li>
+<li>גם הסכום הכולל וגם החלק היחסי נמוכים מממוצע ה-OECD</li>
+</ul>
+
+>`,
+    flashcards:[
+      ['מהם 3 תת-הרפורמות?','מבנית (אל-מיסוד), שיקומית (סל שיקום), ביטוחית (2015 – העברה לקופות)'],
+      ['מתי הרפורמה הביטוחית נכנסה?','יולי 2015'],
+      ['מה 3 עקרונות אידיאולוגיים?','De-Centralization, De-Institutionalization, De-Stigmatization'],
+      ['למה צריך טיפול משולב?','קשר בין פסיכיאטריה לתמותה מוגברת – גופנית + לא-טבעית – דרוש טיפול גוף+נפש'],
+      ['מה שיעור מיטות פסיכיאטריות?','0.38 ל-1,000 (ירד מ-0.77). OECD: 0.63. תפוסה 95%'],
+      ['מה נשאר באחריות המדינה?','שיקום לא-רפואי: דיור, תעסוקה, חברה – לא עבר לקופות'],
+      ['מה ועדת נתניהו המליצה לגבי נפש?','להעביר לקהילה ולקופות (1988) – בפועל עבר רק ב-2015'],
+      ['כמה % סובלים ממחלות נפש?','כ-10%. קשות: 1–2%. כשליש מנכויות ביטוח לאומי = נפשיות'],
+      ['מה מרפאות כללית אחרי הרפורמה?','61 חדשות: 27 לילדים, 34 למבוגרים, 44 פריפריה, 18 ערבי, 14 חרדי'],
+      ['מה ההוצאה הציבורית לנפש?','~5% מכלל הבריאות – נמוך מ-OECD'],
+    ],
+    questions:[
+      {q:'מתי הרפורמה הביטוחית נכנסה לתוקף?',options:['2010','2012','2015','2018'],answer:2},
+      {q:'למה צריך טיפול משולב?',options:['כי זה זול יותר','קשר בין פסיכיאטריה לתמותה מגופנית ולא-טבעית','כי הקופות מחייבות','כי אין ברירה'],answer:1},
+      {q:'מה שיעור מיטות פסיכיאטריות?',options:['0.77','0.63','0.38','1.2'],answer:2},
+      {q:'מה נשאר באחריות המדינה אחרי 2015?',options:['אשפוז','שיקום לא-רפואי (דיור, תעסוקה)','תרופות','ייעוץ'],answer:1},
+      {q:'כמה % סובלים ממחלות נפש?',options:['1%','5%','10%','20%'],answer:2},
+      {q:'מה היה מצב תקופת הביניים (1995–2015)?',options:['מצוין','הזנחה – חלוקת אחריות לא יעילה','לא היה שינוי','הועבר לקופות'],answer:1},
+      {q:'מה De-Stigmatization?',options:['ביזור','פחות אשפוז','שילוב נפש עם רפואה כללית להפחתת סטיגמה','הפרטה'],answer:2},
+    ,
+      {q:'מה נכון לגבי תחלואה גופנית בחולי נפש?',options:['חולי נפש סובלים פחות מיתר לחץ דם','חולי נפש סובלים פחות מסכרת','⭐ חולי נפש מתים יותר מהאוכלוסייה הכללית','חולי נפש סובלים פחות ממחלות נשימה'],answer:2},
+      {q:'מה נכון לגבי תוצאות הרפורמה בבריאות הנפש?',options:['⭐ מספר המרפאות הקהילתיות גדל','התור לטיפול גדל (שלילי)','אחוז המאובחנים גדל','כל התשובות נכונות'],answer:0},
+      {q:'איזו רפורמה בבריאות הנפש עסקה בצמצום מיטות אשפוז פסיכיאטרי?',options:['⭐ הרפורמה המבנית (שנות ה-90 – אל-מיסוד)','הרפורמה השיקומית (2000)','הרפורמה הביטוחית (2015)','כל התשובות נכונות'],answer:0},]
+  },
+  {
+    id:'ministry', title:'ה׳ – משרד הבריאות', color:'#3b82f6',
+    summary:`<h4 class="font-bold text-base text-blue-800">כללי + מקטעי פעילות</h4>
+<p>הוקם 1948. בתחילה: תכנון + פיקוח. בגלל גלי עלייה (x2 אוכלוסייה בשנות ה-50) – הפעיל שירותים בעצמו. פתרון זמני שהפך לקבוע.</p>
+<p><strong>4 מקטעי פעילות:</strong> מממן (מס בריאות, תקציב) | מבטח (תוספת שלישית) | ספק שירותים (11 בתי"ח, טיפות חלב) | רגולטור</p>
+<p><strong>⭐ המשרד נמצא ביותר ממקטע אחד!</strong></p>
+<h4 class="font-bold text-base text-blue-800">חזון ויעדים</h4>
+<p><strong>חזון:</strong> מימוש הזכות לבריאות לכלל האוכלוסייה, מערכת איכותית ושוויונית תוך כיבוד ערכי האדם.</p>
+<p><strong>יעדים:</strong> שיפור איכות | צמצום פערים | יעילות ותיעדוף | מחקר | קידום בריאות | חיזוק תפקיד מיניסטריאלי | שילוב נפש | גריאטריה קהילתית</p>
+<h4 class="font-bold text-base text-blue-800">3 תפקידים + פירוט</h4>
+<table class="stbl w-full"><tr><td class="font-bold">1 – מיניסטריאלי</td><td>פיקוח, רישוי, סטנדרטים, חקיקה, מחקר, תכנון כ"א, היערכות חירום</td></tr>
+<tr><td class="font-bold">2 – מבטח</td><td>תוספת שלישית: גריאטריה, רפואה מונעת. נפש → קופות (2015), שיקום ניידות → קופות (2024)</td></tr>
+<tr><td class="font-bold">3 – ספק</td><td>11 בתי"ח כלליים (~50% מהמיטות), טיפות חלב, 5 מוסדות גריאטריים</td></tr></table>
+<h4 class="font-bold text-base text-blue-800">ניגוד עניינים + מקור הבעלות</h4>
+<p>גם רגולטור וגם ספק + מבטח → <strong>מפקח על עצמו!</strong></p>
+<p>כמיניסטריון: רוצה להוזיל יום אשפוז. כבעלים: רוצה להעלות. <strong>סתירה מובנית.</strong></p>
+<p>ביטויים: מפקח על עצמו | קובע כללים ושחקן בשוק | הקצאת רישיונות ציוד (MRI, CT) – נוטה לבלעדיות ממשלתית</p>
+<h4 class="font-bold text-base text-blue-800">רפורמה בבתי חולים + פתרונות</h4>
+<ul class="list-disc pr-5"><li>רשות אשפוז (2014) – הוקפאה (ליצמן)</li><li><strong>חטיבת המרכזים הרפואיים (2016)</strong> – הפרדה פנים-משרדית</li><li>תיאגוד – חלקי. העברה לקופות – אסותא אשדוד</li></ul>
+<h4 class="font-bold text-base text-blue-800">תקציב 2025 – סוגים וחלוקה</h4>
+<p>כ-59.1 מיליארד ₪ = ~10% מתקציב המדינה.</p>
+<table class="stbl w-full"><tr><td>52%</td><td>תמיכה בקופות (הרכיב הגדול!)</td></tr><tr><td>25%</td><td>בתי"ח ממשלתיים</td></tr><tr><td>16%</td><td>תוספת שלישית</td></tr><tr><td>5%</td><td>מטה המשרד</td></tr><tr><td>2%</td><td>פיתוח (נמוך מאוד – 1.5%)</td></tr></table>
+<p><strong>מושגי תקציב:</strong> מקורי (אושר בכנסת) | נטו (שניתן להוציא) | ברוטו (נטו + מותנה בהכנסה) | הרשאה להתחייב | הוצאה מותנית בהכנסה</p>
+<p>המשרד מעסיק ~50% מעובדי המדינה: 48% אחיות, 27% אחרים, 15% מנהל, 10% רופאים.</p>
+<h4 class="font-bold text-base text-blue-800">פירוט תוספת שלישית (16%) ואתגרים</h4>
+<p>גריאטריה, בריאות הנפש (שיקום), בריאות הציבור. 50% מסופקים ע"י מוסדות משרד, 50% רכש חיצוני.</p>
+<p><strong>אתגרים:</strong> ריבוי תפקידים + ניגוד עניינים | בעלות בתי"ח | תקציב פיתוח 2% בלבד | הזדקנות | תחלואה כרונית | מעבר מאשפוז לקהילה</p>
+<h4 class="font-bold text-base text-blue-800">ההוצאה הלאומית + אסטרטגיה 2030</h4>
+<p><strong>ישראל:</strong> 7.6% מהתמ"ג (2022) לעומת OECD 9.3%. הרכב: 42% ממשלתי | 34% פרטי | 23% מס בריאות | 1% תרומות</p>
+<p><strong>אסטרטגיה 2030 (גובשה 2018):</strong> הזדקנות | תחלואה כרונית | Big Data | רפואה מרחוק | דיגיטציה. 5 מטרות-על: שירות מחובר ושוויוני | מערכת איתנה | קידום בריאות בכל מרחבי החיים | האנשים מובילים ושותפים | המטופל במרכז</p<h4 class="font-bold text-base text-blue-800">⭐ מושגים חשובים בתקציב משרד הבריאות</h4>
+<table class="stbl w-full mt-1">
+<tr><td class="font-bold">תקציב מקורי</td><td>התקציב שאושר בכנסת (חוק התקציב)</td></tr>
+<tr><td class="font-bold">תקציב נטו</td><td>הסכום שניתן להוציא מאוצר המדינה ("תקציב המזומנים")</td></tr>
+<tr><td class="font-bold">תקציב ברוטו</td><td>תקציב נטו + הוצאה מותנית בהכנסה</td></tr>
+<tr><td class="font-bold">הרשאה להתחייב</td><td>סכום שהממשלה יכולה להתחייב לתקופה ארוכה יותר משנת הכספים</td></tr>
+<tr><td class="font-bold">הוצאה מותנית בהכנסה</td><td>תקציב נוסף שניתן להוציא רק אם התקבלה הכנסה מגורם חוץ-ממשלתי. אם ההכנסות קטנות – פחות תקציב</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-blue-800">⭐ פירוט חלוקת התקציב לפי סוגים</h4>
+<ul class="list-disc pr-5 text-sm">
+<li><strong>תקציב שוטף (70%):</strong> אספקה וקנייה של שירותי בריאות ותמיכה במוסדות</li>
+<li><strong>תקציב פיתוח (2% = ~1.5%):</strong> הצטיידות ובנייה חדשה. נמוך מאוד! לרשות המוסדות עומד תקציב נוסף ממקורות חיצוניים ותרומות</li>
+<li><strong>מטה המשרד (5%):</strong> הכשרה מקצועית (בי"ס לסיעוד), תמיכה במד"א, בתי"ח ציבוריים, קופות</li>
+</ul>
+
+<h4 class="font-bold text-base text-blue-800">⭐ תקציב בתי"ח ממשלתיים (25%) – פירוט</h4>
+<p>כל תקציב ההוצאות של בתי"ח ממומן מהכנסות ממכירת שירותים. כשיש גרעון – משרד הבריאות מכסה אותו.</p>
+<p><strong>לקוחות עיקריים:</strong> קופות חולים | ביטוח לאומי (יולדות, תאונות עבודה) | משרד הביטחון (נפגעי איבה, נכי צה"ל) | גורמים פרטיים</p>
+<p class="text-sm">⭐ <strong>חשוב!</strong> תקציב בתי"ח לא כולל כ-15% הוצאות נלוות: פנסיה תקציבית, ביטוח רשלנות, מימון מתמחים, הצטיידות ופחת. אם היו כוללים – בתי"ח היו נראים גרעוניים יותר.</p>
+
+<h4 class="font-bold text-base text-blue-800">⭐ שירותים בתוספת שלישית (16%) – פירוט</h4>
+<p>שירותים באחריות ישירה של משרד הבריאות. אספקה בפועל: 50% ע"י מוסדות המשרד, 50% רכש מגורמי חוץ.</p>
+<ul class="list-disc pr-5 text-sm">
+<li>אשפוז גריאטרי סיעודי: 5 מוסדות ממשלתיים + רכש שירותי אשפוז סיעודי</li>
+<li>בריאות הנפש: תמיכה בשיקום נכי נפש בקהילה (האחריות הביטוחית עברה לקופות 2015)</li>
+<li>בריאות הציבור: טיפות חלב, לשכות בריאות, מעבדות מרכזיות, בריאות התלמיד</li>
+</ul>
+
+<h4 class="font-bold text-base text-blue-800">⭐ אתגרים מרכזיים של משרד הבריאות</h4>
+<ol class="list-decimal pr-5 text-sm space-y-1">
+<li>ריבוי תפקידים וניגודי עניינים</li>
+<li>בעלות על בתי חולים ממשלתיים</li>
+<li>תקצוב פיתוח לא מספק (2% בלבד)</li>
+<li>דמוגרפיה והזדקנות האוכלוסייה</li>
+<li>עלייה בתחלואה כרונית</li>
+<li>צורך במעבר ממודל מוכוון אשפוז למודל קהילתי ומניעתי</li>
+</ol>
+
+<h4 class="font-bold text-base text-blue-800">⭐ השפעת חוקים ורפורמות על משרד הבריאות</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">חוב"מ 1995</td><td>קבע חלוקת אחריות במערכת, הגדיר הסל, הטיל על המשרד תפקידים כרגולטור ומבטח</td></tr>
+<tr><td class="font-bold">רפורמת נפש 2015</td><td>העבירה האחריות הביטוחית לנפש ממשרד הבריאות לקופות החולים</td></tr>
+<tr><td class="font-bold">שיקום ניידות 2024</td><td>מכשירי שיקום וניידות עברו לאחריות קופות</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-blue-800">⭐ אסטרטגיה עד 2030 – ערכים ומטרות עַל</h4>
+<p>גובשה 2018. <strong>מגמות מרכזיות:</strong> הזדקנות אוכלוסייה | עלייה בתחלואה כרונית | טכנולוגיות חדשות + Big Data + רפואה מותאמת אישית | רפואה מרחוק ודיגיטציה</p>
+<p><strong>ערכי המשרד:</strong> שוויון, צדק ועזרה הדדית | האדם במרכז | שותפות, מצוינות, יוזמה וחדשנות</p>
+<p><strong>⭐ 5 מטרות-על:</strong></p>
+<ol class="list-decimal pr-5 text-sm"><li>שירותי בריאות מחוברים, שוויוניים, איכותיים, נגישים ומותאמים</li><li>מערכת בריאות איתנה ויעילה, ערוכה לאתגרים ולהזדמנויות</li><li>קידום בריאות בכל מרחבי החיים ומחזור החיים</li><li>האנשים במערכת מובילים ושותפים</li><li>המטופל במרכז – שותף בקבלת החלטות והתאמת השירותים</li></ol>
+
+>`,
+    flashcards:[
+      ['מה 4 מקטעי פעילות משרד הבריאות?','מממן | מבטח | ספק שירותים | רגולטור'],
+      ['מה ניגוד העניינים המרכזי?','גם רגולטור וגם מפעיל בתי"ח – מפקח על עצמו'],
+      ['מה חטיבת המרכזים הרפואיים (2016)?','הפרדה פנים-משרדית בין תפקיד מיניסטריאלי לבעלות בתי"ח'],
+      ['מה חלוקת תקציב המשרד?','52% קופות | 25% בתי"ח | 16% תוספת שלישית | 5% מטה | 2% פיתוח'],
+      ['מה הוצאה ציבורית לבריאות בישראל?','7.6% מהתמ"ג (OECD: 9.3%). הרכב: 42% ממשלתי, הגדול ביותר'],
+      ['מה אסטרטגיה 2030?','הזדקנות, תחלואה כרונית, Big Data, רפואה מרחוק, דיגיטציה'],
+      ['מה "הוצאה מותנית בהכנסה"?','תקציב נוסף שניתן להוציא רק אם התקבלה הכנסה מגורם חוץ-ממשלתי'],
+      ['מה תקציב פיתוח?','~2% מתקציב המשרד – נמוך מאוד (~1.5%). לבנייה והצטיידות'],
+      ['מה חזון משרד הבריאות?','מימוש הזכות לבריאות לכלל האוכלוסייה, מערכת איכותית ושוויונית'],
+    ],
+    questions:[
+      {q:'מה מקטע משרד הבריאות שגורם לניגוד עניינים?',options:['מממן','ספק שירותים','רגולטור','מבטח'],answer:1},
+      {q:'מה שיעור תקציב שהולך לקופות?',options:['25%','52%','16%','5%'],answer:1},
+      {q:'מה הוצאה לאומית לבריאות בישראל?',options:['9.3% מהתמ"ג','7.6% מהתמ"ג','5%','12%'],answer:1},
+      {q:'מה הרכיב הגדול בהוצאה הלאומית?',options:['פרטי (34%)','ממשלתי (42%)','מס בריאות (23%)','תרומות'],answer:1},
+      {q:'מתי הוקמה חטיבת המרכזים הרפואיים?',options:['2006','2012','2014','2016'],answer:3},
+      {q:'מה אסטרטגיה 2030 של משרד הבריאות?',options:['פרטיזציה','הזדקנות, תחלואה כרונית, Big Data, רפואה מרחוק','קיצוצים','ביטול ועדת הסל'],answer:1},
+    ]
+  },
+  {
+    id:'kupot', title:'ו׳ – קופות החולים: תפקוד, כלכלה ועתיד', color:'#8b5cf6',
+    summary:`<h4 class="font-bold text-base text-violet-800">תפקידי הקופות – HMO</h4>
+<p>Health Maintenance Organization – לא רק ממנות, אלא מנהלות ומספקות. <strong>אחריות לאורך כל החיים.</strong></p>
+<ol class="list-decimal pr-5 text-sm"><li>אחריות כוללת (Case Management)</li><li>ניהול הטיפול הרפואי</li><li>שירותי קהילה: משפחה + מומחים</li><li>התקשרות עם בתי"ח וספקים</li><li>אספקת תרופות</li><li>אחריות לגוף ולנפש</li></ol>
+<h4 class="font-bold text-base text-violet-800">תחרות ומעברים (2024)</h4>
+<p>כ-9.7 מיליון מבוטחים: כללית 50.8% | מכבי 27.6% | מאוחדת 14.1% | לאומית 7.6%.</p>
+<p>סה"כ מעברים נמוך. גבוהים יותר בעשירונים נמוכים. תחרות: שיווק | משיכת רופאים | גיוס חמולות | גיוס מבוטחים. <strong>רצוי: תחרות על איכות טיפול.</strong></p>
+<h4 class="font-bold text-base text-violet-800">תחומי פעילות בקהילה</h4>
+<p>מרפאות | מכונים (רנטגן, פיזיו) | בתי מרקחת | ראשונית | יועצת | נשים וילדים | בריאות הנפש</p>
+<h4 class="font-bold text-base text-violet-800">הרחבת הסל (שירותים שעברו לקופות)</h4>
+<ul class="list-disc pr-5 text-sm"><li>2010: תאונות דרכים + שיניים לילדים</li><li>2015: בריאות הנפש</li><li>2016: תאונות עבודה</li><li>2018: שיניים עד גיל 16</li><li>2019: שיניים לקשישים 75+</li><li>2024: מכשירי שיקום וניידות</li></ul>
+<h4 class="font-bold text-base text-violet-800">רמות טיפול</h4>
+<p>ראשונית (66.7%) – רופא משפחה: שומר סף + Case Manager | יועצת (33.3%) – מומחים | שלישונית – בתי"ח</p>
+<p><strong>5 מקצועות הפניה חופשית:</strong> אורתופדיה, עור, אף-אוזן-גרון, נשים, עיניים</p>
+<p>⭐ 2021: 2/3 מהרפואה היועצת בקהילה, 1/3 בבתי"ח. 75% מהפניות – הפניה חופשית.</p>
+<h4 class="font-bold text-base text-violet-800">חשיבות הרפואה הראשונית</h4>
+<p>ישראל: מוציאה פחות ממדינות מפותחות אך תוחלת חיים גבוהה → הרפואה הראשונית החזקה גורם מרכזי!</p>
+<p>מערכת מידע ממוחשבת מ-90'. קופות = גופים ללא מטרת רווח. שיעור %20 מהבריאות מ-שירותי בריאות.</p>
+<h4 class="font-bold text-base text-violet-800">אתגרי רפואת המשפחה</h4>
+<p>1/3 מרופאי המשפחה מתקרבים לגיל פרישה. רק ~מחצית הם מומחים. אחוז מומחים גבוה יותר במרכז מפריפריה.</p>
+<h4 class="font-bold text-base text-violet-800">שיטות תגמול רופאים</h4>
+<table class="stbl w-full text-sm"><tr><td class="font-bold">קפיטציה אקטיבית</td><td>לפי מבוטחים שביקרו בפועל ברבעון</td></tr><tr><td class="font-bold">קפיטציה פסיבית</td><td>לפי מבוטחים הרשומים – גם אם לא ביקרו</td></tr><tr><td class="font-bold">שכיר יועץ</td><td>~60% בסיס + שאר לפי פעולות</td></tr><tr><td class="font-bold">עצמאי יועץ</td><td>רק לפי תפוקות, ללא בסיס</td></tr></table>
+<p>בכללית: הכי פחות רופאים עצמאיים, הכי הרבה שכירים.</p>
+<h4 class="font-bold text-base text-violet-800">שחיקת צוותים</h4>
+<p>בכל הסקטורים שחיקה גבוהה. גבוהה ביותר: <strong>רופאים</strong>. נמוכה ביותר: <strong>מנהל ומשק</strong>. גבוהה יותר בבתי"ח מבמשרד הבריאות.</p>
+<h4 class="font-bold text-base text-violet-800">הכנסות, תמיכה ומבנה</h4>
+<p>קפיטציה ≈ 89.3% | עצמיות 6.45% | מחלות קשות 4.25%. 84%–89.7% ממקורות ממשלתיים.</p>
+<p><strong>הסכמי תמיכה:</strong> ייצוב כלכלי | הסטת ניתוחים מפרטי לציבורי | חיסוני שפעת | אשפוז בית | שיפור MRI</p>
+<p><strong>לקוחות עיקריים:</strong> כ-78% קופות חולים | 14% ביטוח לאומי | 1% צבא | 2% תיירים</p>
+<h4 class="font-bold text-base text-violet-800">תמהיל הוצאות (2024)</h4>
+<p>אשפוז ורכש מבתי"ח: <strong>42.3%</strong> (הגדול!) | שכר: 25.9%. ביחד ~62%.</p>
+<h4 class="font-bold text-base text-violet-800">גירעונות ואתגרים פיננסיים</h4>
+<p><strong>כל הקופות גרעוניות בנטרול תמיכות.</strong> לאומית: הכי יקרה לנפש. כללית: הכי יעילה (יתרון לגודל).</p>
+<p><strong>מחלוקת הגירעונות:</strong> הקופות: עדכון חלקי + הסכמי שכר ארציים + תמחור שגוי. המשרד: חוסר יעילות + שיווק + שכר גבוה.</p>
+<h4 class="font-bold text-base text-violet-800">עתיד + תורים + פתרונות</h4>
+<p><strong>מגמות:</strong> יותר שירותים לקהילה | אשפוז בית | שחקנים חדשים | Social Determinants of Health</p>
+<p><strong>סיבות תורים:</strong> מחסור רופאים | תורים ← פנייה לפרטי | פריפריה | הפסקת מענקים | אוכלוסייה מזדקנת</p>
+<p><strong>פתרונות:</strong> אחות מומחית | PA (1 ל-100,000 בישראל vs 2,700 בארה"ב!) | רפואה מרחוק (TYTO, אולטרסאונד)</p<h4 class="font-bold text-base text-violet-800">⭐ ביקורים ברפואה יועצת בשנת 2021</h4>
+<p>⭐ <strong>מתוך כלל הביקורים אצל רופאים יועצים ב-2021:</strong></p>
+<ul class="list-disc pr-5 text-sm">
+<li>⭐ <strong>כ-2/3 (66.7%) – בקופות החולים בקהילה</strong></li>
+<li>כ-1/3 (33.3%) – בבתי חולים</li>
+<li>קיימת עלייה משמעותית במספר הייעוצים הווירטואליים</li>
+</ul>
+<p class="text-sm font-medium text-violet-700">⭐ לזכור: רוב הרפואה היועצת מתבצעת בקהילה ולא בבתי חולים!</p>
+
+<h4 class="font-bold text-base text-violet-800">⭐ שימוש בשירותי רפואה יועצת ותורים</h4>
+<ul class="list-disc pr-5 text-sm">
+<li>⭐ ב-2021: 75% מהפניות לרפואה יועצת היו במקצועות הפניה החופשית (5 מקצועות)</li>
+<li>דגש על: מקצועות הפניה החופשית + ילדים + גסטרו</li>
+<li>⭐ אורכי התורים במרפאות החוץ של בתי חולים ארוכים יותר מאשר בקהילה!</li>
+<li>בקהילה: מעל 90% מהרופאים היועצים הם מומחים</li>
+<li>במרפאות חוץ בבתי"ח: רבים מהרופאים הם מתמחים</li>
+<li>⭐ בקהילה לרוב יש בחירת רופא – בבתי"ח לרוב אין</li>
+</ul>
+
+<h4 class="font-bold text-base text-violet-800">⭐ מקומות שבהם ניתנת רפואה יועצת</h4>
+<ol class="list-decimal pr-5 text-sm">
+<li>מרכזים לרפואה יועצת בקהילה</li>
+<li>מרפאות ראשוניות שבהן יושב רופא יועץ</li>
+<li>רופא יועץ עצמאי במרפאתו הפרטית</li>
+<li>מרפאה ייעודית לעצמאיים של הקופה</li>
+<li>מרפאות חוץ בבתי חולים</li>
+</ol>
+
+<h4 class="font-bold text-base text-violet-800">⭐ צורות העסקה של רופאים בקופות</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">שכיר</td><td>עובד במרפאות הקופה | שכר בסיס | לעיתים תוספות לפי תפוקות. ברפואה ראשונית: מכמות מטופלים + קשישים + מקדמי מחלה. ביועצת: מכמות ייעוצים ופעולות. ⭐ בכללית: הכי פחות רופאים עצמאיים, הכי הרבה שכירים</td></tr>
+<tr><td class="font-bold">עצמאי</td><td>עובד במרפאות הקופה או במרפאה פרטית | מתוגמל לפי כמות מטופלים</td></tr>
+<tr><td class="font-bold">קפיטציה אקטיבית</td><td>לפי מטופלים שביקרו בפועל ברבעון</td></tr>
+<tr><td class="font-bold">קפיטציה פסיבית</td><td>לפי מטופלים הרשומים באחריותו, גם אם לא ביקרו</td></tr>
+<tr><td class="font-bold">יועץ שכיר</td><td>כ-60% שכר בסיס + שאר לפי פעולות</td></tr>
+<tr><td class="font-bold">יועץ עצמאי</td><td>לפי תפוקות בפועל, ללא שכר בסיס</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-violet-800">⭐ מבנה הכנסות הקופות (2024)</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">קפיטציה</td><td>⭐ כ-89.3% מהכנסות מגזר הקהילה</td></tr>
+<tr><td class="font-bold">הכנסות עצמיות</td><td>כ-6.45% (השתתפויות עצמיות, תרופות, ביקורי מומחים, בדיקות)</td></tr>
+<tr><td class="font-bold">מחלות קשות</td><td>כ-4.25% (5 מחלות קשות – מחושבות בנפרד)</td></tr>
+</table>
+<p class="text-sm">84%–89.7% מסך ההכנסות מגיעים ממקורות ממשלתיים. הכנסה לנפש מתוקננת בעלייה מתמדת.</p>
+<p class="text-sm">⭐ <strong>לאומית</strong> מקבלת תמיכה נוספת בגלל היותה קופה עם נתח שוק נמוך מ-15%.</p>
+
+<h4 class="font-bold text-base text-violet-800">⭐ הסכמי תמיכה בקופות חולים</h4>
+<p>הממשלה מעניקה תמיכה כספית לפי חוק יסודות התקציב. <strong>מטרות:</strong> ייצוב כלכלי | הכוונת פעילות לתחומים שהמשרד רוצה לפתח.</p>
+<p><strong>⭐ דוגמאות לתמיכות:</strong></p>
+<ul class="list-disc pr-5 text-sm">
+<li>⭐ הסכמי ייצוב – התמיכה המשמעותית ביותר</li>
+<li>הרחבת ניתוחים ציבוריים (הסטה מפרטי לציבורי)</li>
+<li>חיסוני שפעת</li>
+<li>מענקים לאנשי מקצוע באילת</li>
+<li>הרחבת אשפוז בית כחלופת אשפוז</li>
+<li>שיפור זמינות MRI</li>
+</ul>
+
+>`,
+    flashcards:[
+      ['מה HMO?','Health Maintenance Organization – מנהל ומספק, לא רק מממן'],
+      ['מה 5 מקצועות הפניה חופשית?','אורתופדיה, עור, אף-אוזן-גרון, נשים, עיניים'],
+      ['כמה % מהרפואה היועצת בקהילה?','2/3 בקהילה, 1/3 בבתי"ח (2021)'],
+      ['מה ההוצאה הגדולה ביותר של הקופות?','אשפוז ורכש מבתי"ח – 42.3% (לא שכר!)'],
+      ['כמה % קפיטציה מהכנסות?','≈ 89.3% מהכנסות מגזר הקהילה'],
+      ['מי הכי נשחק לפי סקר?','רופאים – גבוהה ביותר. מנהל ומשק – נמוכה ביותר'],
+      ['מה שירותים שעברו לקופות?','2010: תאונות + שיניים לילדים | 2015: נפש | 2018: שיניים עד 16 | 2019: שיניים 75+ | 2024: שיקום ניידות'],
+      ['מה PA בישראל לעומת ארה"ב?','ישראל: 1 ל-100,000. ארה"ב: 2,700 ל-100,000'],
+      ['מה קפיטציה אקטיבית?','תגמול לפי מבוטחים שביקרו בפועל ברבעון'],
+      ['האם הקופות גרעוניות?','כן! כולן גרעוניות בנטרול תמיכות ממשלתיות'],
+    ],
+    questions:[
+      {q:'מה ההוצאה הגדולה של הקופות?',options:['שכר','אשפוז ורכש מבתי"ח (42.3%)','תרופות','שיווק'],answer:1},
+      {q:'כמה % הרפואה היועצת מתבצעת בקהילה?',options:['1/3','1/2','2/3','90%'],answer:2},
+      {q:'מה 5 מקצועות הפניה חופשית?',options:['לב, עצבים, כליות','אורתופדיה, עור, אוג, נשים, עיניים','רק עור ועיניים','כולם דרך הפניה'],answer:1},
+      {q:'מי הכי נשחק לפי סקר?',options:['אחיות','רופאים','מנהל','טכנאים'],answer:1},
+      {q:'מה קפיטציה פסיבית?',options:['תגמול לפי ביקורים','תגמול לפי מבוטחים רשומים גם אם לא ביקרו','ביטוח','פנסיה'],answer:1},
+      {q:'מה PA בישראל ל-100,000?',options:['2,700','500','1','100'],answer:2},
+    ]
+  },
+  {
+    id:'hospitals', title:'ז׳ – בתי חולים ומערך האשפוז', color:'#14b8a6',
+    summary:`<h4 class="font-bold text-base text-teal-800">חשיבות מערכת האשפוז</h4>
+<ul class="list-disc pr-5"><li>כ-1/3 מההוצאה הלאומית לבריאות</li><li>עתירת כ"א מקצועי | חזית הטכנולוגיה | משאב לאומי בחירום</li><li>כ-70% מהוצאת בית"ח = שכר. מספר עובדים לפי מספר מיטות</li></ul>
+<h4 class="font-bold text-base text-teal-800">גורמים משפיעים</h4>
+<p><strong>פנימיים:</strong> הנהלה, מנהלי מחלקות, סקטורים מקצועיים (רופאים/אחיות/מנהל/פרא-רפואי), תשתיות, מערכות מידע, אבטחה.</p>
+<p><strong>חיצוניים:</strong> משרד הבריאות + אוצר | קופות החולים (הפניות, בקרות, תשלום) | הר"י + הסתדרות האחיות | מתחרים | מטופלים</p>
+<h4 class="font-bold text-base text-teal-800">גודל בית חולים ויעילות</h4>
+<table class="stbl w-full"><tr><td>קטן (&lt;300)</td><td>חסרון לגודל – הוצאות קבועות על מעט מיטות</td></tr><tr><td class="font-bold">בינוני (300–800)</td><td><strong>⭐ הכי יעיל! אופטימלי: 400–700</strong></td></tr><tr><td>גדול (&gt;800)</td><td>חסרון – מורכבות ניהולית</td></tr></table>
+<p>כל בתי"ח הפסדיים. יתרון כלכלי להוסיף ימי אשפוז (הכנסה גדלה, הוצאה קבועה כמעט לא משתנה).</p>
+<h4 class="font-bold text-base text-teal-800">סוגי בתי חולים</h4>
+<p><strong>לפי בעלות:</strong> ממשלתיים (שיבא, רמב"ם, סורוקה) | ממשלתיים-עירוניים (איכילוב) | ציבוריים/עמותות (הדסה, שערי צדק, לניאדו) | קופות (כללית: מאיר, כרמל, רבין, קפלן) | פרטיים (אסותא, הרצליה)</p>
+<p><strong>לפי אשפוז:</strong> כללי | פסיכיאטרי | גריאטרי/סיעודי | שיקומי</p>
+<h4 class="font-bold text-base text-teal-800">השוואה ציבורי vs. פרטי</h4>
+<table class="stbl w-full text-xs"><tr><td class="font-bold">נושא</td><td class="font-bold">ציבורי</td><td class="font-bold">פרטי</td></tr>
+<tr><td>בחירת רופא</td><td>אין (למעט שר"פ)</td><td>יש</td></tr>
+<tr><td>מיון/חירום</td><td>יש – חייב</td><td>כמעט אין</td></tr>
+<tr><td>מוכנות חירום</td><td>מאורגן</td><td>כמעט ואין</td></tr>
+<tr><td>מטרה</td><td>בריאות האוכלוסייה</td><td>רווח לבעלים</td></tr>
+<tr><td>פעילויות</td><td>כל הפעילויות</td><td>רק רווחיות</td></tr>
+<tr><td>חובת קבלה</td><td>יש</td><td>אין – רק מי שמשלם</td></tr>
+<tr><td>תעריפים</td><td>קפינג (ממשלתי)</td><td>מחירי שוק</td></tr>
+<tr><td>רווחים</td><td>נשארים לחולים</td><td>מחולקים לבעלים</td></tr>
+<tr><td>תגמול צוות</td><td>הסכמים קיבוציים</td><td>הסכמים אישיים</td></tr></table>
+<h4 class="font-bold text-base text-teal-800">בתי חולים ייחודיים</h4>
+<p>פסיכיאטריים – ממומנים ע"י קופות | שיקומיים – קופות | סיעודיים – משרד הבריאות/ביטוחים/פרטי</p>
+<p>מוסדות: 45 כלליים | 11 נפש | 258 ממושכים | 2 שיקום</p>
+<h4 class="font-bold text-base text-teal-800">מיטות לפי OECD</h4>
+<p><strong>קורטיבי (חריף):</strong> כלליות, פסיכיאטריות ציבוריות, גריאטריה קורטיבית</p>
+<p><strong>שיקומי:</strong> שיקום, גריאטריה שיקומית, תת-חריפה</p>
+<p><strong>ממושך:</strong> פסיכיאטריה פרטית, סיעודית מורכבת, הנשמה ממושכת, גריאטריה סיעודית</p>
+<h4 class="font-bold text-base text-teal-800">מגמות, מיטות ופריסה</h4>
+<p>מספרים מוחלטים: עלו. שיעור ל-1,000: ירד (גידול אוכלוסייה מהיר מהוספת מיטות).</p>
+<table class="stbl w-full text-xs"><tr><td>כלליות</td><td>1.75 ל-1,000 (OECD: 3.3) | 35% מהמיטות | 46% ממשלתי</td></tr><tr><td>סיעודיות</td><td>2.7 ל-1,000 | 55% מהמיטות | רוב פרטי</td></tr><tr><td>פסיכיאטריות</td><td>0.4 ל-1,000 | 8% מהמיטות | רוב ממשלתי (בירידה!)</td></tr><tr><td>שיקום</td><td>~2% מהמיטות (מחסור)</td></tr></table>
+<p><strong>גיאוגרפיה:</strong> דרום: 1.5 ל-1,000. מרכז: 2.4. פריסת מוסדות = לא רק מיטות, גם מיון + מומחים + טכנולוגיה.</p>
+<p><strong>מיטות לפי בעלות:</strong> כלליות/פסיכיאטריות = רוב ממשלתי. כללית ~30% מהכלליות. גריאטריות/סיעודיות = רוב פרטי. שיקומי = ממשלתי+ציבורי+קופות.</p>
+<h4 class="font-bold text-base text-teal-800">מבנה בית חולים כללי</h4>
+<p><strong>מחלקות:</strong> פנימיות, כירורגיות, נשים ומיילדות, ילדים, חדר מיון, מרפאות חוץ, מכונים ומעבדות</p>
+<p><strong>הנהלה:</strong> רפואית (מנהל בית"ח) + סיעוד (מנהלת סיעוד) + אדמיניסטרטיבית (אמרכל)</p>
+<p>בית"ח כללי = מערכת משולבת, לא אוסף מחלקות נפרדות.</p>
+<h4 class="font-bold text-base text-teal-800">לקוחות ורכש</h4>
+<p>לקוחות ציבוריים: 78% קופות | 14% ביטוח לאומי | 1% צבא | 2% תיירים. בסל: רכישה מציבורי+פרטי. בשב"ן: עיקר מפרטי/שר"פ.</p>
+<h4 class="font-bold text-base text-teal-800">תמהיל שירותים ואתגרים</h4>
+<p><strong>יש תחליף קהילתי:</strong> יועצת, אשפוז יום, הדמיה, ניתוחים קטנים. <strong>אין תחליף:</strong> חירום 24/7, אשפוז מלא.</p>
+<p><strong>אתגרים:</strong> גרעון מובנה | מחסור מיטות | מחסור כ"א (70% הוצאה = שכר) | שחיקה | ניהול מוגבל (הסכמים, תקינה, נציבות) | תמחור לא ריאלי → עיוותים וכפילויות</p<h4 class="font-bold text-base text-teal-800">⭐ בתי חולים ייחודיים לפי סוג</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">פסיכיאטריים</td><td>ממוּמנים ע"י קופות החולים (מ-2015). טיפול בחולים עם בעיות נפשיות קשות</td></tr>
+<tr><td class="font-bold">שיקומיים</td><td>באחריות קופות החולים. לחולים אחרי ניתוחים, פציעות, אירוע מוחי</td></tr>
+<tr><td class="font-bold">סיעודיים</td><td>מעל 300 מוסדות, מעל 24,000 מיטות. מימון: משרד הבריאות + ביטוחים + פרטי. לא קופות!</td></tr>
+</table>
+<p class="text-sm">⭐ בישראל: 45 מוסדות לאשפוז כללי | 11 לבריאות הנפש | 258 למחלות ממושכות | 2 לשיקום</p>
+
+<h4 class="font-bold text-base text-teal-800">⭐ מיטות אשפוז לפי סיווג ה-OECD</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">קורטיבי / חריף</td><td>מיטות כלליות + פסיכיאטריות ציבוריות + גריאטריה קורטיבית. קצר טווח, טיפול פעיל</td></tr>
+<tr><td class="font-bold">שיקומי</td><td>מיטות שיקום + גריאטריה שיקומית + תת-חריפה. החזרת המטופל לתפקוד</td></tr>
+<tr><td class="font-bold">ממושך</td><td>פסיכיאטריה פרטית + סיעודית מורכבת + הנשמה ממושכת + גריאטריה סיעודית/תשושי נפש</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-teal-800">⭐ מדדי אשפוז – אשפוז כללי</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">שהייה ממוצעת</td><td>כ-3.9 ימים (2022) – נמוך מממוצע OECD. ירד עד 1997 ומאז יציב</td></tr>
+<tr><td class="font-bold">ימי אשפוז ל-1,000</td><td>כ-554 ימים – בירידה יחד עם ירידת שיעור המיטות</td></tr>
+<tr><td class="font-bold">תפוסת מיטות</td><td>ב-2012: 96.6%! כיום: כ-88% (2022). עדיין גבוה מאוד</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-teal-800">⭐ מגמות במספר ושיעור מיטות (1995–2023)</h4>
+<ul class="list-disc pr-5 text-sm">
+<li>⭐ במספרים מוחלטים: מספר המיטות עלה כמעט בכל סוגי האשפוז</li>
+<li>⭐ בשיעור ל-1,000: ירידה לאורך השנים</li>
+<li>הסיבה: גידול האוכלוסייה מהיר יותר מהוספת המיטות</li>
+<li>⭐ באשפוז פסיכיאטרי: ירידה גם במספר המיטות עצמו!</li>
+<li>שינוי שנתי: ברוב בתי"ח יש מיטות מעל האישור הרשמי של משרד הבריאות בגלל עומסים</li>
+</ul>
+
+<h4 class="font-bold text-base text-teal-800">⭐ פריסה גיאוגרפית ומוסדות האשפוז</h4>
+<ul class="list-disc pr-5 text-sm">
+<li>קיים אי-שוויון גיאוגרפי בין מרכז לפריפריה בנגישות לשירותי אשפוז</li>
+<li>בדרום: כ-1.5 מיטות ל-1,000 לעומת כ-2.4 במרכז</li>
+<li>⭐ בית חולים כללי ≠ רק מיטות! כולל: חדרי מיון | מרפאות חוץ מתמחות | מומחים | טכנולוגיות מתקדמות</li>
+<li>⭐ בהשוואת מחוזות: צריך להתחשב גם במספר מבוטחים + גיל + משך אשפוז + מספר ניתוחים</li>
+</ul>
+
+<h4 class="font-bold text-base text-teal-800">⭐ השלכות מחסור במיטות לפי תחום</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">מיטות כלליות (1.75 ל-1,000)</td><td>קיצור אשפוז | תפוסה גבוהה | עלייה בקבלות | מעבר לאשפוז יום | פערים מרכז/פריפריה</td></tr>
+<tr><td class="font-bold">מיטות סיעוד/שיקום</td><td>מחסור בשני התחומים. סיעוד: 2.7 ל-1,000 (רוב פרטי). שיקום: 2% מהמיטות</td></tr>
+<tr><td class="font-bold">מיטות פסיכיאטריות (0.38 ל-1,000)</td><td>תפוסה 95%! מתחת ממוצע OECD (0.63). ירידה בגלל מעבר לקהילה</td></tr>
+</table>
+<p class="text-sm">אינטרסים: משרד הבריאות (כרגולטור – עוד מיטות; כבעלים – חשש מתחרות) | קופות (פחות מיטות = פחות הוצאות) | אוצר (לא רוצה עלויות נוספות) | מטופל (רוצה מיטה זמינה)</p>
+
+<h4 class="font-bold text-base text-teal-800">⭐ מבנה בית חולים כללי – ייחודיות</h4>
+<p>בית"ח כללי חייב לפעול כמערכת משולבת ולא כאוסף מחלקות נפרדות:</p>
+<ul class="list-disc pr-5 text-sm">
+<li>קשר הדוק: מיון ↔ מחלקות אשפוז ↔ מחלקות תמיכה (מעבדות, מכונים)</li>
+<li>מטרה: רצף טיפולי, טיפול רב-תחומי, יעילות תפעולית</li>
+<li><strong>הנהלה משולשת:</strong> רפואית (מנהל בית"ח) + סיעוד (מנהלת סיעוד) + אדמיניסטרטיבית (אמרכל)</li>
+</ul>
+
+<h4 class="font-bold text-base text-teal-800">⭐ לקוחות בתי חולים ציבוריים</h4>
+<p>⭐ <strong>קופות חולים כ-78%</strong> מהכנסות בתי"ח הציבוריים. נוספים: ביטוח לאומי כ-14% | צבא כ-1% | תיירים ומחוץ לסל כ-2%.</p>
+
+<h4 class="font-bold text-base text-teal-800">⭐ קניית שירותי בתי חולים</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">במסגרת הסל</td><td>קופות קונות מבתי"ח ציבוריים ופרטיים</td></tr>
+<tr><td class="font-bold">במסגרת שב"ן</td><td>בעיקר מבתי"ח פרטיים או שר"פ בציבוריים. העירוב ציבורי-פרטי יוצר בעיות</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-teal-800">⭐ בית חולים מול קהילה – תמהיל שירותים</h4>
+<table class="stbl w-full">
+<tr><td class="font-bold">⭐ שירותים עם תחליף בקהילה</td><td>רפואה יועצת | אשפוז יום | הדמיה | ניתוחים קטנים + אנדוסקופיות. בקהילה: זמינות גבוהה יותר, שעות נוחות, עלות נמוכה</td></tr>
+<tr><td class="font-bold">⭐ שירותים ללא תחליף</td><td>חירום 24/7 | אשפוז מלא | מיון | טראומה | השתלות</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-teal-800">⭐ אתגרים במערך האשפוז – פירוט</h4>
+<ol class="list-decimal pr-5 text-sm space-y-1">
+<li><strong>מחסור במשאבים:</strong> גרעון מובנה | רק חלק מהמערך מסובסד | אי-התאמה גידול אוכלוסייה לתוספת מיטות | פריפריה מפלה</li>
+<li><strong>כוח אדם:</strong> מחסור ברפואה/סיעוד/טכנאים | שחיקה | שכר 70% מהוצאות | לחץ ארגוני מקצועי (הר"י)</li>
+<li><strong>ניהול מוגבל:</strong> בתי"ח ממשלתיים כפופים להסכמי שכר, תקינה ונציבות שירות המדינה</li>
+<li><strong>תמחור:</strong> מחירים לא ריאליים יוצרים עיוותים, כפילויות ובזבוז משאבים לאומי</li>
+<li><strong>ניגוד עניינים:</strong> משרד הבריאות מפקח על עצמו | קופות מחזיקות בתי"ח פרטיים</li>
+<li><strong>חוסר התאמה:</strong> מספר מיטות לא מתעדכן לפי גידול + הזדקנות</li>
+</ol>
+
+>`,
+    flashcards:[
+      ['מהו הגודל האופטימלי לבית"ח?','400–700 מיטות (בינוני: 300–800)'],
+      ['מה חסרון לגודל בבית"ח קטן?','הוצאות קבועות גדולות על מעט מיטות – פחות יעיל'],
+      ['מה ההבדל בין ציבורי לפרטי?','ציבורי: חייב לקבל הכל, מיון, חירום, רווח לחולים. פרטי: בחירת רופא, רק רווחי, רווח לבעלים'],
+      ['מיטות כלליות ל-1,000 בישראל?','1.75 (OECD: 3.3). פחות מהממוצע'],
+      ['מיטות סיעודיות – מה ייחודן?','55% מהמיטות. רוב פרטי. בעלייה בגלל הזדקנות'],
+      ['מה לקוח מרכזי של בתי"ח ציבוריים?','78% קופות חולים'],
+      ['מה שירותים עם תחליף קהילתי?','יועצת, אשפוז יום, הדמיה, ניתוחים קטנים'],
+      ['מה שירותים ללא תחליף?','חירום 24/7 + אשפוז מלא'],
+      ['מה ייחוד איכילוב?','ממשלתי-עירוני: שיתוף מדינה + עיריית ת"א'],
+      ['מה קפינג?','מחירים מפוקחים של משרד הבריאות – לא מחירי שוק'],
+    ],
+    questions:[
+      {q:'מה הגודל האופטימלי לבית"ח?',options:['קטן (<300)','בינוני (400–700)','גדול (>800)','ענק'],answer:1},
+      {q:'מה % מהמיטות הן סיעודיות?',options:['8%','35%','55%','2%'],answer:2},
+      {q:'כמה מיטות כלליות ל-1,000 בישראל?',options:['3.3','4.5','1.75','2.5'],answer:2},
+      {q:'מה לקוח מרכזי של בתי"ח ציבוריים?',options:['14%','78% קופות','50% פרטיים','100% ממשלה'],answer:1},
+      {q:'מה שירות ללא תחליף קהילתי?',options:['יועצת','הדמיה','חירום 24/7 ואשפוז מלא','ניתוחים קטנים'],answer:2},
+      {q:'מה תמחור "קפינג"?',options:['מחירי שוק','מחירים מפוקחים ממשלתיים','הנחה לחברים','ביטוח'],answer:1},
+    ]
+  },
+  {
+    id:'nursing', title:'ח׳ – מנהל האחיות', color:'#e11d48',
+    summary:`<h4 class="font-bold text-base text-rose-800">מבנה ותפקיד + הקמה</h4>
+<p>הוקם <strong>1994</strong>. גוף בתוך משרד הבריאות. בראשו: <strong>האחות הראשית הארצית</strong>. כ-85,000 אחים/ות = הסקטור הגדול ביותר במערכת.</p>
+<p><strong>תפקידים:</strong> מדיניות | תקנים | הנחיות | פיתוח מקצועי | רישוי | בחינות | תכנון כ"א</p>
+<h4 class="font-bold text-base text-rose-800">5 המחלקות המרכזיות</h4>
+<table class="stbl w-full"><tr><td class="font-bold">1. הסמכה</td><td>ליבת ההכשרה | תוכניות לימוד | מעמד בוגרי חו"ל</td></tr>
+<tr><td class="font-bold">2. הנחיות מקצועיות</td><td>סטנדרטים | בקרות | כשירויות | תלונות ומשמעת</td></tr>
+<tr><td class="font-bold">3. פיתוח מקצועי</td><td>עיצוב מחדש של תפקיד האחות | מומחיות | מסלולי הכשרה</td></tr>
+<tr><td class="font-bold">4. בחינות רישוי</td><td>בחינות ממשלתיות | מאגרי מידע | בדיקת כשירות</td></tr>
+<tr><td class="font-bold">5. הסדרת כ"א</td><td>תכנון | צמצום פערים | גיוס ושימור | קריירה | שכר לימוד</td></tr></table>
+<h4 class="font-bold text-base text-rose-800">חזון + תוכנית החומש</h4>
+<p>קידום האחות כגורם מוביל ומשפיע. <strong>יעדי חומש:</strong> 7 אחיות ל-1,000 (כיום: 6.97) | 60% קורס על-בסיסי (כיום: 48.2%) | 6% מומחיות (כיום: 1.15%)</p>
+<h4 class="font-bold text-base text-rose-800">פרופיל אחיות ישראל 2024</h4>
+<p>83,881 בעלי רישיון. 84% נשים | 16% גברים | 28% ערבים ודרוזים | 88% בוגרות ישראל.</p>
+<p>כ-2/3 בבתי"ח | 1/3 בקהילה. 20% מכלל עובדי מערכת הבריאות | 40% מכ"א בבתי"ח.</p>
+<p>⭐ כבר אין הכשרה לאחיות מעשיות (2024). מקצוע הופך מקצועי יותר.</p>
+<h4 class="font-bold text-base text-rose-800">כ"א ותשתיות + פערים גיאוגרפיים</h4>
+<p>ישראל: 5.1 ל-1,000 (OECD: 9.6). מחסור חמור!</p>
+<p>דרום: עלה מ-3.8 ל-4.5 ל-1,000 – בגלל הרחבת מסגרות הכשרה (בן גוריון, קפלן, ברזילי, אשקלון). עדיין בתחתית.</p>
+<h4 class="font-bold text-base text-rose-800">מסלולי קריירה</h4>
+<p>קליני: הכשרה על-בסיסית → מומחית → קידום ארגוני | אקדמי: תואר א' → ב' → ד' | ניהולי: עתודה → תואר ב' (מנהל מערכות) → תוכנית ענבר</p>
+<h4 class="font-bold text-base text-rose-800">הבסיס החוקי</h4>
+<p><strong>מדרג:</strong> חוקי יסוד → חקיקה ראשית → חקיקת משנה → חוזרי מנכ"ל → חוזרי מנהל האחיות</p>
+<p><strong>3 קבוצות חקיקה:</strong> מערכת הבריאות (פקודת בריאות העם, חוב"מ) | רישוי (פקודת רופאים, רוקחים) | זכויות (חוק זכויות החולה)</p>
+<h4 class="font-bold text-base text-rose-800">הבעיה המרכזית – אין חוק אחיות!</h4>
+<p>אין בישראל חוק אחיות ייעודי → מוסדר דרך פקודות, תקנות וחוזרים.</p>
+<table class="stbl w-full text-xs mt-1"><tr><td class="font-bold">סעיף 33 לפקודת בריאות העם</td><td><strong>"בנה עולם!"</strong> – מקור הסמכות להכשרת אחיות. מסמיך מנכ"ל להתקין תקנות.</td></tr>
+<tr><td class="font-bold">תקנות 1981</td><td>צוות סיעודי במרפאות – ייחוד המקצוע</td></tr>
+<tr><td class="font-bold">תקנות 1988</td><td>עוסקים בסיעוד בבתי"ח – ייחוד + ניהול פנקס</td></tr>
+<tr><td class="font-bold">פקודת הרופאים</td><td>ס' 7: הפעלת אחיות. ס' 59(א): פטור = האצלה לאחיות. ס' 59(ב): פעולות חריגות</td></tr>
+<tr><td class="font-bold">חוזר מנכ"ל 13/2001</td><td>קבע פעולות שהן גם עיסוק ברפואה וגם בסיעוד</td></tr>
+<tr><td class="font-bold">חוזר מנהל האחיות 43</td><td>שינה פעולות מחריגות לפעולות סיעוד</td></tr></table>
+<h4 class="font-bold text-base text-rose-800">פעולת סיעוד מול פעולה חריגה</h4>
+<p><strong>פעולת סיעוד:</strong> מעוגנת בתקנות בריאות העם | מותרת לפי הכשרה + מקום + תנאים + הוראת רופא/פרוטוקול</p>
+<p><strong>פעולה חריגה:</strong> במקור פעולה רפואית, מותרת למי שאינו רופא בתנאים</p>
+<h4 class="font-bold text-base text-rose-800">בעד ונגד חוק האחיות + נקודות מרצה</h4>
+<p><strong>בעד:</strong> גבולות ברורים | חיזוק מעמד | הסדרה ברורה | הפחתת עמימות</p>
+<p><strong>נגד:</strong> כבר מוסדר | קשה לייחוד מקצועי | מנהל האחיות מחזיק מעמד יחסית</p>
+<p>⭐ <strong>נקודות מרצה:</strong></p>
+<div class="p-3 bg-rose-50 rounded-lg border border-rose-200 text-sm mt-2">
+<strong>💬 נקודות מרצה חשובות במיוחד (⭐⭐⭐):</strong>
+<ul class="list-disc pr-4 mt-1">
+<li>עיסוק ברפואה – מעוגן בפקודת הרופאים</li>
+<li>עיסוק בסיעוד – מעוגן בתקנות בריאות העם 1981 ו-1988</li>
+<li>פעולת סיעוד – פעולה שמעוגנת כפעולת עיסוק בסיעוד בתקנות בריאות העם</li>
+<li>פעולות סיעוד הן ליבת העיסוק של האחות – המנכ"ל מוסמך לקחת פעולות שהוגדרו כרפואיות ולהגדיר אותן כפעולות סיעוד</li>
+<li>מתן מרשם המשך – אינו ליבת העיסוק בסיעוד. זה קשור לעיסוק ברוקחות</li>
+<li>ייחוד מקצוע – לסיעוד אין פעולה ייחודית לגמרי שרק אחיות עושות → קשה להגדיר מהו "ייחוד המקצוע"</li>
+<li>למיילדות יש כוח רב – יש להן סמכות לבצע מעקב הריון ולקבוע דיאגנוזה</li>
+<li>⭐ ביטול רישיון אחות מוסמכת = <strong>מנכ"ל משרד הבריאות</strong></li>
+<li>⭐ ביטול רישיון מיילדת = <strong>שר הבריאות</strong></li>
+<li>האצלת סמכות לאחות הראשית הארצית – בשנות ה-80 המנכ"ל האציל נושא הכשרת האחיות לאחות הראשית. הבעיה: האצלה יכולה להילקח בכל רגע → מעמד פחות חזק מחוק עצמאי</li>
+<li>⭐ התפקיד העיקרי של מנהל הסיעוד לפי הדגש במצגת = <strong>רישום</strong></li>
+</ul>
+</div<h4 class="font-bold text-base text-rose-800">⭐ פקודת בריאות העם ותקנות – פירוט</h4>
+<table class="stbl w-full text-xs">
+<tr><td class="font-bold">תקנות 1981 – צוות סיעודי במרפאות</td><td>ייחוד המקצוע במרפאות. לא יעסוק אדם בסיעוד ולא יועסק אלא אם מורשה לעסוק או בעל היתר זמני. חריג: תלמיד סיעוד בפיקוח מורשה</td></tr>
+<tr><td class="font-bold">תקנות 1988 – עוסקים בבתי"ח</td><td>מגדירות: מהו עיסוק בסיעוד | מי רשאי | ניהול פנקס | תנאים לרישום | פטור מסוים מפקודת הרופאים למי שסיימה השתלמות מוכרת</td></tr>
+<tr><td class="font-bold">⭐⭐⭐ סעיף 33 לפקודת בריאות העם</td><td>"בנה עולם!" – מסמיך את מנכ"ל משרד הבריאות להתקין תקנות בנוגע ל: הכשרת אחיות | אימון אחיות | שיכון לחולים ולאחיות | שעות ותנאי עבודה של אחיות. הוא הבסיס לכל עולם הכשרת האחיות!</td></tr>
+<tr><td class="font-bold">שעת חירום בפקודה</td><td>כשיש סכנה חמורה לבריאות הציבור: סמכויות לבידוד חולים, מעצר, כניסה לבתים פרטיים</td></tr>
+<tr><td class="font-bold">רישוי בתי חולים</td><td>פקודת בריאות העם מפרטת תנאים טכניים להקמת בתי"ח, אך אינה מסדירה במלואה את הפעילות השוטפת</td></tr>
+</table>
+
+<h4 class="font-bold text-base text-rose-800">⭐ תנאים כלליים לרישום בפנקס האחיות</h4>
+<ol class="list-decimal pr-5 text-sm">
+<li>להיות אזרח או תושב ישראל</li>
+<li>להיות בן 18 ומעלה</li>
+<li>להוכיח הכשרה מקצועית מתאימה</li>
+<li>ידיעה בסיסית לפחות בעברית</li>
+<li>שלא הורשע בעבירה שיש בה כדי למנוע עיסוק בסיעוד</li>
+</ol>
+<p class="text-sm">⭐ <strong>האחות הראשית הארצית</strong> מנהלת את פנקס האחיות. מדורים: אחות מוסמכת | אחות מעשית | מיילדת | מטפלת | השתלמות מוכרת</p>
+
+>`,
+    flashcards:[
+      ['מתי הוקם מנהל האחיות?','1994'],
+      ['מה 5 המחלקות?','הסמכה | הנחיות מקצועיות | פיתוח מקצועי | בחינות רישוי | הסדרת כ"א'],
+      ['מה יעדי תוכנית החומש?','7 ל-1,000 | 60% על-בסיסי | 6% מומחיות'],
+      ['כמה אחיות ל-1,000 בישראל vs OECD?','ישראל: 5.1. OECD: 9.6'],
+      ['מה הבעיה המרכזית?','אין חוק אחיות ייעודי! מוסדר דרך פקודות ותקנות'],
+      ['מה סעיף 33 לפקודת בריאות העם?','"בנה עולם!" – מקור הסמכות המרכזי להכשרת אחיות'],
+      ['מה הבדל פעולת סיעוד מחריגה?','סיעוד = ליבת עיסוק האחות. חריגה = במקור רפואית, מותרת בתנאים'],
+      ['מי מבטל רישיון אחות vs מיילדת?','אחות = מנכ"ל | מיילדת = שר הבריאות'],
+      ['מה תפקיד עיקרי מנהל הסיעוד?','רישום (לפי הדגש במצגת)'],
+      ['מה שיעור ערבים ודרוזים באחיות?','28% מהאחים/ות | 39% ממקבלי רישיונות חדשים'],
+    ],
+    questions:[
+      {q:'מתי הוקם מנהל האחיות?',options:['1948','1994','1995','2000'],answer:1},
+      {q:'מה הבעיה המרכזית בהסדרת הסיעוד?',options:['יש יותר מדי חוקים','אין חוק אחיות ייעודי','המחלקות לא פועלות','אין רישוי'],answer:1},
+      {q:'מה סעיף 33 לפקודת בריאות העם?',options:['חוק הרופאים','מקור הסמכות להכשרת אחיות','ביטוח בריאות','זכויות חולה'],answer:1},
+      {q:'מי מבטל רישיון מיילדת?',options:['מנכ"ל משרד הבריאות','שר הבריאות','ועדת רישוי','ביהמ"ש'],answer:1},
+      {q:'כמה אחיות ל-1,000 בישראל?',options:['9.6','7','5.1','3'],answer:2},
+      {q:'מה תפקיד עיקרי מנהל הסיעוד?',options:['הכשרה','רישום','מחקר','פיקוח'],answer:1},
+    ]
+  },
+  {
+    id:'inequality', title:'ט׳ – עוני, אי-שוויון ופריפריה', color:'#0891b2',
+    summary:`<h4 class="font-bold text-base text-cyan-800">אי-שוויון מול חוסר הוגנות</h4>
+<p><strong>Inequality (אי-שוויון):</strong> הבדל נצפה במצב הבריאות בין קבוצות – עצם קיום הפער.</p>
+<p><strong>Inequity (חוסר הוגנות):</strong> פער שנובע מתנאים חברתיים שאפשר לצמצמו במדיניות.</p>
+<p>⭐ לא כל פער = חוסר הוגנות. אך פער מתנאים חברתיים שניתן לצמצמו = חוסר הוגנות.</p>
+<h4 class="font-bold text-base text-cyan-800">מדידת אי-שוויון</h4>
+<p><strong>עקומת לורנץ:</strong> מודדת התפלגות הכנסה. קו אלכסוני = שוויון מלא. רחוק מהקו = אי-שוויון גדול.</p>
+<p><strong>מדד ג'יני:</strong> 0–100. 0 = שוויון מלא. 100 = אי-שוויון מוחלט. כימות של עקומת לורנץ.</p>
+<h4 class="font-bold text-base text-cyan-800">מאיפה נוצרים פערים?</h4>
+<p>גיל, מין/מגדר, גנטיקה | השכלה, תעסוקה, הכנסה | מוצא, דת, תרבות | מעמד משפחתי | אורח חיים | סביבת חיים ועבודה | מצב סוציו-אקונומי</p>
+<p>⭐ <strong>רוב הפערים מגורמים חברתיים וכלכליים, לא מאיכות הטיפול עצמו!</strong></p>
+<h4 class="font-bold text-base text-cyan-800">מדרון חברתי בבריאות (Social Gradient)</h4>
+<p>ככל שמעמד חברתי-כלכלי גבוה – בריאות טובה יותר. <strong>כל עלייה בסולם = שיפור בריאות.</strong></p>
+<h4 class="font-bold text-base text-cyan-800">השפעת עוני</h4>
+<p>מחסור פיזי | חסמי שירותי בריאות | לחץ מתמשך | אורח חיים פחות בריא | נגישות נמוכה למידע | סביבה חברתית קשה → תחלואה, מוגבלות, תמותה מוקדמת</p>
+<h4 class="font-bold text-base text-cyan-800">WHO 2019: 5 תחומי התערבות</h4>
+<p>שירותים רפואיים | השתכרות וביטחון סוציאלי | תנאי מגורים | מצב סוציאלי | תנאי עבודה</p>
+<p>⭐ <strong>מערכת הבריאות עצמה תורמת רק 10–11% מהפערים!</strong> רוב הגורמים – מחוץ לשליטתה.</p>
+<h4 class="font-bold text-base text-cyan-800">מרכז ופריפריה</h4>
+<p><strong>גיאוגרפית:</strong> ריחוק פיזי + פחות שירותים/תשתיות/הזדמנויות</p>
+<p><strong>חברתית:</strong> מעמד נמוך גם אם פיזית במרכז – הדרה + פערי השכלה + קושי בגישה</p>
+<h4 class="font-bold text-base text-cyan-800">תוחלת חיים בישראל</h4>
+<p>גבוהה מ-OECD | נשים > גברים | יהודים > ערבים | מרכז > פריפריה | תמותת תינוקות – נמוכה מ-OECD</p>
+<h4 class="font-bold text-base text-cyan-800">פערים בתחלואה ובהתנהגות</h4>
+<p>בגיל 65+: ככל הכנסה נמוכה יותר → יותר מחלות כרוניות. השכלה נמוכה → מחלה מגבילה: פי 1.8 יהודים, פי 2.5 ערבים.</p>
+<p><strong>עישון:</strong> גברים > נשים | ערבים > יהודים | צעירים > מבוגרים. גורם תמותה #1 שניתן למנוע.</p>
+<p><strong>עודף משקל:</strong> נשים > גברים | פריפריה > מרכז | סוציו-אקונומי נמוך > גבוה.</p>
+<p><strong>ממוגרפיה:</strong> נשים חרדיות וערביות מבצעות פחות.</p>
+<h4 class="font-bold text-base text-cyan-800">פערים בשירותי בריאות בפריפריה</h4>
+<p><strong>בתי"ח:</strong> פחות מקורות הכנסה | יותר גירעונות | קושי בגיוס כ"א | שירותים מצומצמים</p>
+<p><strong>קופות:</strong> מחסור רופאים ומומחים | תורים ארוכים | פחות ביטוח משלים</p>
+<p><strong>בתי מרקחת:</strong> יישובים קטנים/פריפריה רחוקה (>15 ק"מ) – נגישות נמוכה</p>
+<h4 class="font-bold text-base text-cyan-800">למה ביקור אצל רופא אינו פשוט?</h4>
+<p>מרחק | ניידות | שעות פעילות | עלות | שפה ותרבות | התאמה מגדרית/דתית | אמון ברופא | חוסר ידע על זכויות</p>
+<h4 class="font-bold text-base text-cyan-800">אסטרטגיות לצמצום פערים</h4>
+<p><strong>מעלה הזרם:</strong> טיפול בשורש חברתי (הכנסה, דיור, תעסוקה, חינוך)</p>
+<p><strong>אמצע הזרם:</strong> שיפור מערכת הבריאות והקהילה</p>
+<p><strong>מורד הזרם:</strong> שינוי התנהגות (עישון, תזונה, בדיקות סקר)</p>
+<p><strong>פתרונות:</strong> תמריצים לפריפריה | שירותים ניידים | טלה-רפואה | הנגשה תרבותית | סבסוד | אוריינות בריאותית | שיתופי פעולה</p>
+<p><strong>⭐ רגישות תרבותית:</strong> הבנת השפעת תרבות על תפיסות בריאות. יישומים: מגשרים תרבותיים | תרגום | גיוס צוות מגוון. <strong>מגבלה: לא מספיקה לבדה – צריך לטפל גם בחסמים מבניים.</strong></p>
+<div class="mt-3 p-3 bg-cyan-50 rounded-lg border border-cyan-200 text-sm">
+<strong>💬 סיכום זהב (⭐⭐⭐):</strong>
+<p class="mt-1">אי-שוויון בבריאות הוא פער בין קבוצות. כאשר הפער אינו הוגן וניתן לצמצום באמצעות מדיניות – הוא נקרא חוסר הוגנות. הפערים מושפעים בעיקר מגורמים חברתיים-כלכליים. מערכת הבריאות תורמת רק כ-10–11% מהפערים, אך יכולה להחמיר אותם.</p>
+<p class="mt-1"><strong>⭐ 3 רמות צמצום:</strong> מעלה הזרם (שורש חברתי: הכנסה, דיור, חינוך) | אמצע הזרם (מערכת בריאות + קהילה) | מורד הזרם (שינוי התנהגות בריאותית)</p>
+<p class="mt-1"><strong>⭐ תוחלת חיים:</strong> גבוהה מ-OECD | נשים > גברים | יהודים > ערבים | מרכז > פריפריה | תמותת תינוקות – נמוכה מ-OECD</p>
+</div>`,
+    flashcards:[
+      ['מה ההבדל inequality vs inequity?','אי-שוויון = עצם הפער. חוסר הוגנות = פער חברתי שניתן לצמצמו'],
+      ['מה מדד ג"יני?','0–100: 0 = שוויון מלא. 100 = אי-שוויון מוחלט'],
+      ['מה מדרון חברתי בבריאות?','ככל שמעמד גבוה יותר – בריאות טובה יותר. כל עלייה = שיפור'],
+      ['כמה % מהפערים מגיעים ממערכת הבריאות?','10–11% בלבד! רוב הפערים – מגורמים חברתיים'],
+      ['מה 5 תחומי WHO לצמצום פערים?','שירותים רפואיים | השתכרות | מגורים | מצב סוציאלי | תנאי עבודה'],
+      ['מה פריפריה גיאוגרפית vs חברתית?','גיאוגרפית = ריחוק פיזי. חברתית = מעמד נמוך גם במרכז'],
+      ['מה 3 אסטרטגיות לצמצום?','מעלה הזרם (שורש חברתי) | אמצע (מערכת בריאות) | מורד (התנהגות)'],
+      ['מה רגישות תרבותית?','הבנת השפעת תרבות על תפיסות בריאות. חשובה אך לא מספיקה לבדה'],
+      ['מה חסמים בביקור אצל רופא?','מרחק, עלות, שפה, תרבות, מגדר/דת, אמון, חוסר ידע על זכויות'],
+    ],
+    questions:[
+      {q:'מה ההבדל בין inequality ל-inequity?',options:['אין הבדל','אי-שוויון = פער. חוסר הוגנות = פער חברתי שניתן לצמצמו','inequity = יותר גדול','inequality = יותר חמור'],answer:1},
+      {q:'כמה % מהפערים בבריאות ממערכת הבריאות?',options:['50%','30%','10–11%','90%'],answer:2},
+      {q:'מה מדרון חברתי בבריאות?',options:['שיפועי בניין','קשר בין מעמד חברתי לבריאות – ככל גבוה יותר, בריאות טובה','גרף ירידה','מדרון פיזי'],answer:1},
+      {q:'מה 3 רמות אסטרטגיה לצמצום פערים?',options:['ממשלה, קופות, ציבור','מעלה, אמצע ומורד הזרם','רפואית, כלכלית, תרבותית','מניעה, טיפול, שיקום'],answer:1},
+      {q:'מה פריפריה חברתית?',options:['ריחוק פיזי','מעמד נמוך גם אם פיזית במרכז','כפר','אזור ספר'],answer:1},
+      {q:'מה רגישות תרבותית?',options:['הבנת בריאות','הבנת השפעת תרבות על תפיסות בריאות וטיפול','מדיניות','תרגום בלבד'],answer:1},
+    ]
+  },
+  {
+    id:'workforce', title:'י׳ – כוח אדם ורפורמת יציב', color:'#d97706',
+    summary:`<h4 class="font-bold text-base text-amber-800">כוח האדם – נתוני מפתח</h4>
+<p>~50% מהוצאות מערכת הבריאות. בבתי"ח: מעל 70%. בקהילה: ~30%.</p>
+<p>⭐ <strong>הגדול ביותר: אחיות. שני בגודלו: רופאים.</strong></p>
+<p>שוק לא חופשי: מעורבות ממשלתית רבה | ארגוני עובדים חזקים | הכשרה ארוכה | שחיקה גבוהה</p>
+<h4 class="font-bold text-base text-amber-800">סקטורים וצורות העסקה</h4>
+<p><strong>סקטורים:</strong> רפואה | סיעוד | רוקחות | פרא-רפואיים | פסיכולוגיה ועו"ס | מנהל + טכנולוגיה</p>
+<p><strong>צורות:</strong> שכירים | עצמאיים | חוזה אישי | עבודה נוספת | מתנדבים</p>
+<h4 class="font-bold text-base text-amber-800">הסדרה ורישוי</h4>
+<p><strong>בחוק:</strong> רופאים (פקודת הרופאים) | שיניים | רוקחים | פסיכולוגים | אופטומטריסטים | מיילדות | גנטיקה</p>
+<p><strong>הסדרת משרד הבריאות:</strong> פודיאטריה, כירופרקטיקה, סייעות שיניים, טכנולוגים רפואיים</p>
+<p><strong>לא מוסדרים:</strong> רפואה משלימה/אלטרנטיבית</p>
+<h4 class="font-bold text-base text-amber-800">שחיקה</h4>
+<p>גבוהה מהאוכלוסייה הכללית. <strong>גבוהה ביותר: רופאים. גבוהה יותר בבתי"ח מבמשרד.</strong> השלכות: ירידת שביעות רצון | פגיעה באיכות | עזיבת מקצוע</p>
+<h4 class="font-bold text-base text-amber-800">תכנון כוח אדם + אתגרים</h4>
+<p>משך הכשרה: רופא 7 שנים | מומחה 12–16 | אחות 4 | פרא-רפואי 3–4</p>
+<p><strong>ביקוש:</strong> גידול אוכלוסייה | הזדקנות | מחלות כרוניות | טכנולוגיה | שינוי ציפיות</p>
+<p><strong>היצע:</strong> פרישות | הגירה | חלקיות משרה | יותר נשים | שחיקה | התמחויות חדשות</p>
+<p><strong>זיהוי מחסור:</strong> שיעור נורמטיבי | סימני שטח (תורים, שעות נוספות, קושי גיוס) | שינוי לאורך זמן | השוואה ל-OECD</p>
+<h4 class="font-bold text-base text-amber-800">נתוני רופאים</h4>
+<p>נמוך מ-OECD. בוגרי בתי ספר לרפואה – מהנמוכים ב-OECD. <strong>מעל 60% ממקבלי הרישיון למדו בחו"ל!</strong> (רוב מזרח אירופה)</p>
+<p>57% גברים | 27% ערבים ודרוזים | <strong>25% מעל גיל 67 → פרישה משמעותית צפויה!</strong></p>
+<p>ל-23% מהמומחים יש שתי התמחויות.</p>
+<h4 class="font-bold text-base text-amber-800">רפורמת יציב (מ-2019)</h4>
+<p><strong>רקע:</strong> בוגרי מוסדות חו"ל שלא הוכיחו הכשרה מספקת.</p>
+<p><strong>מטרות:</strong> שיפור איכות הכשרה | העלאת רמת בחינות רישוי</p>
+<p><strong>עיקרים:</strong> חלק קליני בבחינת רישוי | בחינה ממוחשבת | ביטול בונוסים אוטומטיים | הכרה רק במוסדות OECD/WFME</p>
+<p><strong>השפעה:</strong> פחות רופאים יקבלו רישיון → איכות תשתפר → עלול להיות מחסור גדול יותר!</p>
+<h4 class="font-bold text-base text-amber-800">אחיות ורוקחות</h4>
+<p><strong>אחיות:</strong> 5.1 ל-1,000 (OECD: 9.6). 84% נשים | 28% ערבים/דרוזים. 2/3 בבתי"ח. מגמות: הרחבת סמכויות | מוסמכות → מעשיות (אין יותר מעשיות!) | APN</p>
+<p><strong>רוקחות:</strong> שיעור עולה, מספר ל-רוקח יורד. מחסור במרכז. 63% נשים | 49% ערבים/דרוזים. מעבר לייעוץ קליני + רובוטים בבתי מרקחת.</p>
+<p><strong>פיזור גיאוגרפי:</strong> ⭐ גבוה ביותר: ת"א + חיפה. נמוך ביותר: <strong>דרום</strong>.</p>
+<div class="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
+<strong>💬 נקודות מרצה – כוח אדם (⭐⭐⭐):</strong>
+<ul class="list-disc pr-4 mt-1">
+<li>⭐⭐⭐ כ-25% מהרופאים מעל גיל 67 → פרישה משמעותית צפויה בעשור הקרוב</li>
+<li>⭐⭐⭐ רפורמת יציב = שיפור איכות גם במחיר ירידה בכמות הרופאים</li>
+<li>⭐ מחסור ברופאי משפחה, אך לא מוגדר כ"מקצוע במצוקה" בגלל המשמעות התקציבית</li>
+<li>⭐ שאלת בחינה: הנשחק ביותר = <strong>רופאים</strong>. הנמוך ביותר = <strong>מנהל ומשק</strong></li>
+<li>⭐ מעל 60% מהרופאים למדו בחו"ל. 23% מהמומחים – שתי התמחויות</li>
+<li>⭐ אחיות: 84% נשים | 28% ערבים/דרוזים | 39% ממקבלי רישיונות חדשים ערבים/דרוזים</li>
+<li>⭐ רוקחות: 63% נשים | 49% ערבים/דרוזים – שיעור גבוה מאוד במקצוע</li>
+</ul>
+</div>`,
+    flashcards:[
+      ['מה % מהוצאות מערכת הבריאות = כ"א?','~50% כולל. בבתי"ח: >70%. בקהילה: ~30%'],
+      ['מה קבוצת כ"א הגדולה ביותר?','אחיות (20% מכלל עובדים). שנייה: רופאים'],
+      ['מה רפורמת יציב (2019)?','שיפור איכות הכשרת רופאים מחו"ל: חלק קליני, ממוחשבת, WFME בלבד'],
+      ['כמה % למדו בחו"ל?','מעל 60% ממקבלי רישיון רפואה למדו בחו"ל (רוב מזרח אירופה)'],
+      ['מה אתגר הזדקנות רופאים?','25% מעל גיל 67 → פרישה משמעותית צפויה. אין גלי עלייה כ-90'],
+      ['מה פיזור גיאוגרפי כ"א?','גבוה: ת"א + חיפה. נמוך ביותר: דרום'],
+      ['מה מגמות ברוקחות?','שיעור עולה, ייעוץ קליני, רובוטים בבתי מרקחת, הרחבת סמכויות'],
+      ['מה שיעור ערבים/דרוזים בסיעוד?','28% מהאחיות | 39% ממקבלי רישיונות חדשים'],
+    ],
+    questions:[
+      {q:'מה % מהוצאות מערכת הבריאות = כ"א?',options:['20%','50%','70%','90%'],answer:1},
+      {q:'מה רפורמת יציב?',options:['שיפור מחירים','שיפור איכות הכשרת רופאים מחו"ל','קיצוצים','שינוי מס'],answer:1},
+      {q:'כמה % רופאים למדו בחו"ל?',options:['20%','40%','מעל 60%','100%'],answer:2},
+      {q:'מה אחוז רופאים מעל גיל 67?',options:['5%','15%','25%','40%'],answer:2},
+      {q:'איפה הכי נמוך שיעור כ"א רפואי?',options:['ירושלים','תל אביב','דרום','צפון'],answer:2},
+      {q:'מה מגמה ברוקחות?',options:['ירידה','מעבר לייעוץ קליני + הרחבת סמכויות','פחות רוקחים','ביטול הרוקחות'],answer:1},
+    ]
+  },
+  {
+    id:'thirdsector', title:'י"א – המגזר השלישי', color:'#16a34a',
+    summary:`<h4 class="font-bold text-base text-green-800">הגדרה – מה המגזר השלישי?</h4>
+<p>ארגונים שאינם ממשלה ואינם עסקיים. פועלים <strong>ללא כוונת רווח</strong> למטרות ציבוריות וחברתיות.</p>
+<p><strong>שמות:</strong> מלכ"ר | עמותה | חל"צ | NGO</p>
+<p>⭐ <strong>מותר להרוויח, אסור לחלק רווחים לבעלים!</strong> הרווחים חוזרים לפעילות.</p>
+<h4 class="font-bold text-base text-green-800">למה צריך מגזר שלישי?</h4>
+<p>מצוקות ללא מענה | יוזמות קהילתיות | פתרונות גמישים | פחות בירוקרטיה | יותר נגישות</p>
+<h4 class="font-bold text-base text-green-800">⭐⭐⭐ מאפייני המגזר</h4>
+<ol class="list-decimal pr-5 text-sm"><li><strong>דגש על ערכים</strong> – חזון, אידיאולוגיה, שליחות</li><li><strong>ריבוי מקורות מימון</strong> – ממשלה, מכירות, תרומות</li><li><strong>ריבוי בעלי עניין</strong> – תורמים, עובדים, מתנדבים, מקבלי שירות, ממשלה</li><li><strong>מבנה ארגוני מעורב</strong> – פורמלי ולא פורמלי</li><li><strong>מבנה תעסוקה מעורב</strong> – שכירים + מתנדבים</li><li><strong>קידום שוויון ודמוקרטיה</strong> – זכויות, מוחלשים, איכות סביבה</li><li><strong>חדשנות ויזמות</strong> – פתרונות חדשים, שיתופי פעולה</li></ol>
+<h4 class="font-bold text-base text-green-800">מודלים עולמיים</h4>
+<table class="stbl w-full text-xs"><tr><td class="font-bold">סוציאל-דמוקרטי (סקנדינביה)</td><td>מדינה מספקת הכל → מגזר שלישי קטן</td></tr><tr><td class="font-bold">תאגידי (גרמניה, צרפת)</td><td>שיתוף הדוק מדינה–מגזר שלישי</td></tr><tr><td class="font-bold">ליברלי (ארה"ב, בריטניה)</td><td>מדינה מספקת פחות → מגזר שלישי גדול מאוד</td></tr><tr><td class="font-bold">סטטי (יפן, מזרח אירופה)</td><td>גם מדינה וגם מגזר שלישי פחות מפותחים</td></tr></table>
+<h4 class="font-bold text-base text-green-800">תפקידי המגזר</h4>
+<p><strong>א. מתן שירותים</strong> – בריאות, רווחה, חינוך, תרבות</p>
+<p><strong>ב. סנגור ושינוי מדיניות</strong> – לובי, מחקרים, תקשורת, בג"ץ</p>
+<p><strong>ג. ארגוני חברים וסיוע עצמי</strong> – גמלאים, הורים, עולים</p>
+<p>⭐ ארגון אחד יכול לבצע כמה תפקידים במקביל!</p>
+<h4 class="font-bold text-base text-green-800">⭐⭐⭐ המודל התלת-מגזרי</h4>
+<table class="stbl w-full"><tr><td class="font-bold">מגזר 1 – ממשלה</td><td>יוצר <strong>הון ציבורי</strong> – רגולציה, מימון, מדיניות</td></tr><tr><td class="font-bold">מגזר 2 – שוק</td><td>יוצר <strong>הון פרטי</strong> – חברות תרופות, ביטוחים, בתי"ח פרטיים</td></tr><tr><td class="font-bold">מגזר 3 – חברה אזרחית</td><td>יוצר <strong>הון חברתי</strong> – עמותות, ארגוני סיוע, קבוצות תמיכה</td></tr></table>
+<h4 class="font-bold text-base text-green-800">תמורות + ערך מוסף + אתגרים</h4>
+<p><strong>תמורות:</strong> התרחבות | פילנתרופיה תאגידית מקצועית | ערך משותף | חשיבה עסקית (נתונים, מדדים, אג"ח חברתי)</p>
+<p><strong>ערך מוסף:</strong> מחויבות ושליחות | מומחיות מהשטח | גמישות | חדשנות | התאמה מהירה</p>
+<p><strong>אתגרים:</strong> תחרות על משאבים | כפילות | ⭐ <strong>פרדוקס ההצלחה</strong> (ככל שמצליח → יותר משאבים נדרשים) | תלות בממשלה | מיצוב כפחות מקצועי</p>
+<h4 class="font-bold text-base text-green-800">⭐⭐⭐ פרויקט הופקינס (מ-1992) + הגדרה</h4>
+<p>פרויקט בינלאומי להגדרת המגזר ולהשוואה בין מדינות. <strong>5 תנאי הופקינס:</strong></p>
+<ol class="list-decimal pr-5 text-sm font-bold"><li>פורמלי</li><li>פרטי</li><li>ללא כוונת רווח</li><li>עצמאי</li><li>התנדבותי</li></ol>
+<h4 class="font-bold text-base text-green-800">המגזר בישראל כיום</h4>
+<p>~48,500 ארגונים רשומים | ~1,300 בבריאות/הצלת חיים | ~500,000 עובדים בשכר | ~700,000 מתנדבים | ~12% מהמשרות | ~5.2% מהתמ"ג</p>
+<p>⭐ 93% משולבים במערכת הציבורית ונותנים שירותים חוזית</p>
+<h4 class="font-bold text-base text-green-800">⭐⭐⭐ מקורות מימון</h4>
+<p>53.7% ממשלה | 31.4% מכירת שירותים | 7.6% תרומות ישראל | 6.5% תרומות חו"ל</p>
+<p>⭐ <strong>שני שלישים מהתרומות בישראל מגיעים מחו"ל!</strong></p>
+<h4 class="font-bold text-base text-green-800">מוסדות אשפוז + גופים מובלטים</h4>
+<p>~25% ממיטות האשפוז = מגזר שלישי. <strong>⭐ שאלת בחינה: הדסה שייך למגזר השלישי!</strong></p>
+<p><strong>בתי"ח:</strong> הדסה, שערי צדק, לניאדו, אלי"ן, הרצוג, האיטלקי, סנט לואי</p>
+<p><strong>גופים:</strong> מד"א | איחוד הצלה | האגודה למלחמה בסרטן | עזר מציון | יד שרה | זק"א</p>
+<div class="mt-3 p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
+<strong>💬 נקודות חשובות לבחינה (⭐⭐⭐):</strong>
+<ul class="list-disc pr-4 mt-1">
+<li>⭐⭐⭐ חמשת תנאי הופקינס: פורמלי, פרטי, ללא כוונת רווח, עצמאי, התנדבותי</li>
+<li>⭐⭐⭐ מודל תלת-מגזרי: ממשלה (הון ציבורי) | שוק (הון פרטי) | חברה אזרחית (הון חברתי)</li>
+<li>⭐ פרדוקס ההצלחה: ככל שהארגון מצליח ומשרת יותר אנשים → זקוק ליותר משאבים</li>
+<li>⭐⭐⭐ מקורות מימון: 53.7% ממשלה | 31.4% מכירת שירותים | 7.6% תרומות ישראל | 6.5% תרומות חו"ל</li>
+<li>⭐ שני שלישים מהתרומות בישראל מגיעות מחו"ל!</li>
+<li>⭐ 93% מהארגונים משולבים במערכת הציבורית ונותנים שירותים חוזית</li>
+<li>⭐ שאלת בחינה מפורסמת: איזה בית חולים שייך למגזר השלישי? <strong>הדסה</strong></li>
+<li>ניהול מלכ"ר vs. עסק: מטרה חברתית, דילמות ערכיות, שילוב מתנדבים, אין חלוקת רווחים – אך גם: תכנון אסטרטגי, ניהול תקציב, שיווק, בקרה</li>
+</ul>
+</div>`,
+    flashcards:[
+      ['מהי הגדרת מגזר שלישי?','ארגונים שאינם ממשלה ואינם עסקיים. ללא כוונת רווח. למטרות ציבוריות'],
+      ['מה 5 תנאי הופקינס?','פורמלי, פרטי, ללא כוונת רווח, עצמאי, התנדבותי'],
+      ['מה המודל התלת-מגזרי?','ממשלה (הון ציבורי) | שוק (הון פרטי) | חברה אזרחית (הון חברתי)'],
+      ['מה פרדוקס ההצלחה?','ככל שהארגון מצליח ומשרת יותר אנשים → צריך יותר משאבים'],
+      ['מה % מהתרומות בישראל מחו"ל?','2/3 (שני שלישים) מהתרומות בישראל מגיעות מחו"ל'],
+      ['מה 4 מודלים עולמיים?','סוציאל-דמוקרטי (קטן), תאגידי, ליברלי (גדול), סטטי'],
+      ['מה גופי אשפוז במגזר שלישי?','הדסה, שערי צדק, לניאדו – כ-25% ממיטות האשפוז'],
+      ['כמה ארגונים שלישי בישראל?','~48,500 | 1,300 בבריאות | 500,000 עובדים | 700,000 מתנדבים'],
+      ['מה 7 מאפייני המגזר?','ערכים | ריבוי מימון | ריבוי בעלי עניין | מבנה מעורב | תעסוקה מעורבת | שוויון | חדשנות'],
+      ['מה 3 תפקידי המגזר?','מתן שירותים | סנגור ושינוי מדיניות | ארגוני חברים'],
+    ],
+    questions:[
+      {q:'מה 5 תנאי הופקינס?',options:['גדול, עשיר, ממשלתי, מוכר, ישן','פורמלי, פרטי, ללא רווח, עצמאי, התנדבותי','ציבורי, מקצועי, מממן, מוסדר, גלובלי','אחר'],answer:1},
+      {q:'מה הון חברתי במודל תלת-מגזרי?',options:['כסף','יוצר המגזר השלישי (עמותות, סיוע)','מניות','נדל"ן'],answer:1},
+      {q:'מה פרדוקס ההצלחה?',options:['הצלחה גורמת לפשיטת רגל','ככל שמצליח יותר → צריך יותר משאבים','הצלחה = ביטול הארגון','אין פרדוקס'],answer:1},
+      {q:'כמה % תרומות מחו"ל בישראל?',options:['10%','1/3','2/3','90%'],answer:2},
+      {q:'מה המגזר הליברלי (ארה"ב)?',options:['מגזר שלישי קטן','מגזר שלישי גדול מאוד','ממשלה מספקת הכל','אין מגזר שלישי'],answer:1},
+      {q:'איזה בית"ח שייך למגזר השלישי?',options:['שיבא','אסותא','הדסה','רמב"ם'],answer:2},
+    ]
+  }
+
+];
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('[id^="tab-"]').forEach(s=>s.classList.add('hidden'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+function renderTopics(){
+  document.getElementById('topics-grid').innerHTML=topicsData.map(t=>`
+    <button type="button" class="topic-card rounded-2xl p-4 text-right shadow-md" style="background:${t.color}" onclick="openSummary('${t.id}')">
+      <h3 class="text-white font-bold text-xs mb-1">${t.title}</h3>
+      <p class="text-white/75 text-xs">לחץ לסיכום ←</p>
+    </button>`).join('');
+}
+function openSummary(id){
+  const t=topicsData.find(x=>x.id===id);
+  document.getElementById('modal-title').textContent=t.title;
+  document.getElementById('modal-content').innerHTML=t.summary;
+  document.getElementById('summary-modal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('summary-modal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+document.getElementById('summary-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+let currentFCTopic=0;
+function renderFCTopicBtns(){
+  document.getElementById('fc-topic-btns').innerHTML=topicsData.map((t,i)=>
+    `<button type="button" class="px-2 py-1 rounded-full text-xs font-medium transition" style="${i===currentFCTopic?'background:'+t.color+';color:#fff':'background:#f3f4f6;color:#374151'}" onclick="switchFCTopic(${i})">${t.title.split('–')[1]?.trim()||t.title}</button>`
+  ).join('');
+}
+function switchFCTopic(i){currentFCTopic=i;renderFCTopicBtns();renderFlashcards();}
+function renderFlashcards(){
+  const cards=topicsData[currentFCTopic].flashcards,color=topicsData[currentFCTopic].color;
+  document.getElementById('fc-grid').innerHTML=cards.map(c=>`
+    <button type="button" class="flip-card" style="aspect-ratio:4/3" onclick="this.classList.toggle('is-flipped')">
+      <div class="flip-inner">
+        <div class="flip-front shadow-lg" style="background:${color}"><p class="text-white font-bold text-xs px-2">${c[0]}</p></div>
+        <div class="flip-back shadow-lg border-2" style="background:${color}11;border-color:${color}"><p class="text-gray-800 text-xs font-medium px-2">${c[1]}</p></div>
+      </div></button>`).join('');
+}
+
+let quizQuestions=[],currentQ=0,score=0,quizCount=20,quizAnswers=[];
+function renderQuizSetup(){
+  document.getElementById('quiz-topic-checks').innerHTML=topicsData.map((t,i)=>`
+    <label class="flex items-center gap-2 p-2 rounded-xl cursor-pointer border-2 transition hover:shadow-md" style="border-color:${t.color}33;background:${t.color}0d">
+      <input type="checkbox" class="w-4 h-4 rounded" style="accent-color:${t.color}" data-topic-idx="${i}" checked>
+      <span class="font-medium text-xs" style="color:${t.color}">${t.title}</span>
+    </label>`).join('');
+  document.getElementById('quiz-count-btns').innerHTML=[10,20,30,40,60,80,100].map(c=>
+    `<button type="button" class="px-4 py-2 rounded-lg font-bold transition text-sm ${c===quizCount?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700 hover:bg-gray-200'}" onclick="setQuizCount(${c})">${c}</button>`
+  ).join('');
+}
+function setQuizCount(n){quizCount=n;renderQuizSetup();}
+function startQuiz(){
+  const checks=document.querySelectorAll('#quiz-topic-checks input[type=checkbox]');
+  let sel=[];
+  checks.forEach(cb=>{if(cb.checked)sel.push(parseInt(cb.dataset.topicIdx));});
+  if(!sel.length){document.getElementById('quiz-error').textContent='יש לבחור לפחות נושא אחד';document.getElementById('quiz-error').classList.remove('hidden');return;}
+  document.getElementById('quiz-error').classList.add('hidden');
+  let allQ=[];
+  sel.forEach(idx=>topicsData[idx].questions.forEach(q=>allQ.push({...q,topicIdx:idx})));
+  allQ.sort(()=>Math.random()-0.5);
+  quizQuestions=allQ.slice(0,Math.min(quizCount,allQ.length));
+  currentQ=0;score=0;quizAnswers=new Array(quizQuestions.length).fill(0);
+  document.getElementById('quiz-setup').classList.add('hidden');
+  document.getElementById('quiz-container').classList.remove('hidden');
+  document.getElementById('quiz-result').classList.add('hidden');
+  document.getElementById('quiz-content').classList.remove('hidden');
+  renderQuestion();
+}
+function renderQuestion(){
+  const q=quizQuestions[currentQ],color=topicsData[q.topicIdx].color;
+  const ts=topicsData[q.topicIdx].title.split('–')[1]?.trim()||topicsData[q.topicIdx].title;
+  document.getElementById('quiz-progress').innerHTML=`
+    <div class="flex justify-between items-center mb-2">
+      <span class="font-bold text-sm">שאלה ${currentQ+1} / ${quizQuestions.length}</span>
+      <span class="text-xs px-2 py-1 rounded-full text-white" style="background:${color}">${ts}</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2"><div class="h-2 rounded-full transition-all" style="width:${(currentQ/quizQuestions.length)*100}%;background:${color}"></div></div>`;
+  updateQuizMap();
+  const wa=quizAnswers[currentQ]!==0;
+  document.getElementById('quiz-content').innerHTML=`
+    <p class="text-base font-bold mb-5">${q.q}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      ${q.options.map((o,i)=>`<button type="button" class="quiz-option p-3 rounded-xl border-2 border-gray-200 font-medium text-right text-sm" onclick="selectAnswer(${i})" ${wa?'disabled':''}>${o}</button>`).join('')}
+    </div>`;
+  if(wa){
+    const btns=document.querySelectorAll('.quiz-option');
+    btns[q.answer].classList.add('correct');
+    if(quizAnswers[currentQ]<0){const wi=Math.abs(quizAnswers[currentQ])-2;if(wi>=0&&wi<btns.length)btns[wi].classList.add('wrong');}
+  }
+  document.getElementById('prev-q-btn').disabled=currentQ===0;
+  document.getElementById('next-q-btn').disabled=!wa;
+}
+function updateQuizMap(){
+  document.getElementById('quiz-map-inline').innerHTML=quizAnswers.map((ans,i)=>{
+    const bg=ans>0?'#10b981':ans<0?'#ef4444':i===currentQ?'#6366f1':'#e5e7eb';
+    const tc=(ans!==0||i===currentQ)?'white':'#6b7280';
+    return `<button type="button" class="w-6 h-6 rounded flex items-center justify-center font-bold text-xs" style="background:${bg};color:${tc}" onclick="goToQuestion(${i})">${ans>0?'✓':ans<0?'✗':(i+1)}</button>`;
+  }).join('');
+}
+function goToQuestion(idx){currentQ=idx;renderQuestion();}
+function prevQuestion(){if(currentQ>0){currentQ--;renderQuestion();}}
+function nextQuestion(){if(currentQ<quizQuestions.length-1){currentQ++;renderQuestion();}else if(quizAnswers.every(a=>a!==0))showResult();}
+function selectAnswer(idx){
+  if(quizAnswers[currentQ]!==0)return;
+  const correct=quizQuestions[currentQ].answer;
+  const btns=document.querySelectorAll('.quiz-option');
+  btns[correct].classList.add('correct');
+  if(idx===correct){score++;quizAnswers[currentQ]=1;}
+  else{btns[idx].classList.add('wrong');quizAnswers[currentQ]=-(idx+2);}
+  btns.forEach(b=>b.disabled=true);
+  updateQuizMap();
+  document.getElementById('next-q-btn').disabled=false;
+  setTimeout(()=>{if(currentQ===quizQuestions.length-1)showResult();},900);
+}
+function skipQuestion(){
+  if(quizAnswers[currentQ]!==0)return;
+  if(currentQ<quizQuestions.length-1){currentQ++;renderQuestion();}
+  else{if(quizAnswers.filter((a,i)=>i!==currentQ&&a!==0).length===quizQuestions.length-1)showResult();}
+}
+function showResult(){
+  document.getElementById('quiz-content').classList.add('hidden');
+  document.getElementById('quiz-progress').innerHTML='';
+  document.getElementById('quiz-map-inline').innerHTML='';
+  document.getElementById('quiz-result').classList.remove('hidden');
+  const answered=quizAnswers.filter(a=>a!==0).length,skipped=quizQuestions.length-answered;
+  const pct=answered>0?Math.round((score/answered)*100):0;
+  const emoji=pct>=90?'🏆':pct>=75?'🎉':pct>=60?'👍':'📚';
+  document.getElementById('score-text').innerHTML=`${emoji} ציון: <strong>${score}</strong> מתוך ${answered} (${pct}%)${skipped>0?' | דילגת על '+skipped:''}`;
+  document.getElementById('quiz-map').innerHTML='<div class="flex flex-wrap gap-1.5 justify-center">'+
+    quizAnswers.map((ans,i)=>`<div class="w-6 h-6 rounded flex items-center justify-center font-bold text-white text-xs" style="background:${ans>0?'#10b981':ans<0?'#ef4444':'#d1d5db'}">${ans>0?'✓':ans<0?'✗':'—'}</div>`).join('')+'</div>';
+}
+function backToSetup(){document.getElementById('quiz-container').classList.add('hidden');document.getElementById('quiz-setup').classList.remove('hidden');}
+function restartQuiz(){startQuiz();}
+function downloadAllSummaries(){
+  const printWindow = window.open('','_blank');
+  let allContent = '';
+  topicsData.forEach(t => {
+    allContent += `<div style="page-break-before:auto;border-bottom:2px solid #6366f1;margin-bottom:24px;padding-bottom:24px;">
+      <h2 style="color:#312e81;font-size:18px;margin-bottom:12px;padding:8px 12px;background:#f0f4ff;border-radius:6px;">${t.title}</h2>
+      <div>${t.summary}</div>
+    </div>`;
+  });
+  printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="he"><head>
+    <meta charset="UTF-8"><title>מערכת הבריאות בישראל – כל הסיכומים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Rubik',Arial,sans-serif;margin:25px;color:#1e293b;font-size:12px;line-height:1.65;direction:rtl;}
+      h1{color:#1e3a5f;font-size:22px;text-align:center;border-bottom:3px solid #3b82f6;padding-bottom:10px;margin-bottom:24px;}
+      h2{color:#312e81;font-size:16px;}
+      h4{color:#1e40af;font-size:13px;margin-top:14px;margin-bottom:5px;}
+      table{border-collapse:collapse;width:100%;margin:6px 0;font-size:11px;}
+      td{border:1px solid #e2e8f0;padding:4px 7px;}
+      tr:nth-child(even) td{background:#f8fafc;}
+      ul,ol{padding-right:18px;margin:4px 0;}
+      li{margin-bottom:2px;}
+      p{margin:3px 0;}
+      .stbl td{border:1px solid #e2e8f0;padding:4px 7px;font-size:11px;}
+      @media print{body{margin:12mm;} @page{margin:12mm;size:A4;}}
+    </style></head><body>
+    <h1>🏥 מערכת הבריאות בישראל – כל הסיכומים</h1>
+    ${allContent}
+    <p style="margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;">סיכום לבחינה – מערכת הבריאות בישראל</p>
+  </body></html>`);
+  printWindow.document.close();
+  setTimeout(()=>{printWindow.print();},800);
+}
+function downloadPDF(){
+  const title = document.getElementById('modal-title').textContent;
+  const content = document.getElementById('modal-content').innerHTML;
+  const printWindow = window.open('','_blank');
+  printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="he"><head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Rubik',Arial,sans-serif;margin:30px;color:#1e293b;font-size:13px;line-height:1.7;direction:rtl;}
+      h1{color:#312e81;font-size:20px;border-bottom:2px solid #6366f1;padding-bottom:8px;margin-bottom:16px;}
+      h4{color:#1e40af;font-size:14px;margin-top:16px;margin-bottom:6px;}
+      table{border-collapse:collapse;width:100%;margin:8px 0;}
+      td{border:1px solid #e2e8f0;padding:5px 8px;font-size:12px;}
+      tr:nth-child(even) td{background:#f8fafc;}
+      ul,ol{padding-right:20px;}
+      li{margin-bottom:3px;}
+      p{margin:4px 0;}
+      @media print{body{margin:15px;} @page{margin:15mm;}}
+    </style></head><body>
+    <h1>${title}</h1>
+    ${content}
+    <p style="margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px;">מערכת הבריאות בישראל – סיכום לבחינה</p>
+  </body></html>`);
+  printWindow.document.close();
+  setTimeout(()=>{printWindow.print();},800);
+}
+renderTopics();renderFCTopicBtns();renderFlashcards();renderQuizSetup();
+</script>
+</body>
+</html>
